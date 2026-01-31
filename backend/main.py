@@ -50,7 +50,7 @@ app.add_middleware(
 
 # ─── Global state ─────────────────────────────────────────────────────────────
 _df: Optional[pd.DataFrame] = None
-_stop_words = set(stopwords.words("english") | stopwords.words("spanish"))
+_stop_words = set(stopwords.words("english")) | set(stopwords.words("spanish"))
 _stop_words.update(["the","and","was","for","are","but","not","you","all","can",
                     "had","her","one","our","out","has","que","los","las","del",
                     "con","por","una","fue","est","como","sin","sobre","entre",
