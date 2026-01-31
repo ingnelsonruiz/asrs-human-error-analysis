@@ -1,7 +1,9 @@
 """
-Análisis de Patrones de Error Humano en ASRS — Backend con FastAPI
-Objetivo: Desarrollar un modelo analítico para la identificación y caracterización de patrones de error humano en operaciones aeronáuticas, 
-utilizando minería de datos y procesamiento de lenguaje natural (NLP) sobre la base de datos ASRS (Aviation Safety Reporting System)
+ASRS Human Error Pattern Analysis — FastAPI Backend
+=====================================================
+Objective: Develop an analytical model for identification and characterization
+of human error patterns in aeronautical operations using data mining and NLP
+on the ASRS database.
 """
 
 import os
