@@ -1,400 +1,246 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ASRS — Análisis de Errores Humanos en Aviación</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ASRS — Análisis de Errores Humanos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════════════════════════════════════
-   RESET & CSS VARIABLES
-   ═══════════════════════════════════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ═══ RESET ═══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --bg-base:       #0d1117;
-  --bg-layer1:     #161b22;
-  --bg-layer2:     #1c2333;
-  --glass:         rgba(22,27,34,0.55);
-  --glass-border:  rgba(255,255,255,0.06);
-  --glass-hover:   rgba(255,255,255,0.1);
+  --white:#ffffff;
+  --off-white:#f8fafc;
+  --gray-50:#f1f5f9;
+  --gray-100:#e2e8f0;
+  --gray-200:#cbd5e1;
+  --gray-300:#94a3b8;
+  --gray-400:#64748b;
+  --gray-500:#475569;
+  --gray-600:#334155;
+  --gray-700:#1e293b;
+  --gray-800:#0f172a;
 
-  --cyan:          #00e5ff;
-  --cyan-dim:      rgba(0,229,255,0.15);
-  --cyan-glow:     rgba(0,229,255,0.35);
-  --magenta:       #e040fb;
-  --magenta-dim:   rgba(224,64,251,0.15);
-  --amber:         #ffab00;
-  --amber-dim:     rgba(255,171,0,0.15);
-  --emerald:       #00e676;
-  --emerald-dim:   rgba(0,230,118,0.15);
-  --coral:         #ff6b6b;
-  --coral-dim:     rgba(255,107,107,0.15);
-  --lavender:      #b388ff;
+  --navy:#1e3a5f;
+  --navy-light:#2d5a8e;
+  --blue:#3b82f6;
+  --blue-light:#60a5fa;
+  --blue-50:#eff6ff;
+  --blue-100:#dbeafe;
 
-  --text-primary:  #f0f6fc;
-  --text-secondary:#8b949e;
-  --text-muted:    #484f58;
+  --teal:#0d9488;
+  --teal-50:#f0fdfa;
+  --teal-100:#ccfbf1;
 
-  --radius-sm:     6px;
-  --radius-md:     12px;
-  --radius-lg:     18px;
-  --radius-xl:     24px;
+  --amber:#d97706;
+  --amber-50:#fffbeb;
+  --amber-100:#fef3c7;
+
+  --red:#dc2626;
+  --red-50:#fef2f2;
+  --red-100:#fee2e2;
+
+  --purple:#7c3aed;
+  --purple-50:#f5f3ff;
+  --purple-100:#ede9fe;
+
+  --coral:#e11d48;
+  --coral-50:#fff1f2;
+
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg:0 8px 24px rgba(0,0,0,0.12);
+  --radius:8px;
+  --radius-lg:12px;
 }
 
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  font-family: 'Exo 2', sans-serif;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-  line-height: 1.6;
-}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--gray-700);min-height:100vh;line-height:1.6}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ANIMATED BACKGROUND
-   ═══════════════════════════════════════════════════════════════════════════ */
-#bg-canvas {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none;
+/* ═══ HEADER ═══════════════════════════════════════════════════════════════ */
+.header{
+  background:var(--white);border-bottom:1px solid var(--gray-100);
+  padding:0 2rem;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);
 }
-.bg-gradient-overlay {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(ellipse 70% 50% at 10% 90%, rgba(0,229,255,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 90% 10%, rgba(224,64,251,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 45% at 50% 60%, rgba(0,230,118,0.04) 0%, transparent 60%);
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--navy),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:18px;
 }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   HEADER
-   ═══════════════════════════════════════════════════════════════════════════ */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(13,17,23,0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--glass-border);
-  padding: 0 2rem;
-  height: 68px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-
-.logo { display: flex; align-items: center; gap: 14px; }
-.logo-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--cyan), var(--magenta));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; box-shadow: 0 0 20px rgba(0,229,255,0.3);
-  animation: pulse-icon 3s ease-in-out infinite;
-}
-@keyframes pulse-icon {
-  0%, 100% { box-shadow: 0 0 20px rgba(0,229,255,0.3); }
-  50%      { box-shadow: 0 0 35px rgba(0,229,255,0.55); }
-}
-.logo-text { font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; background: linear-gradient(135deg, var(--cyan), var(--lavender)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.logo-sub { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: -2px; }
+.logo-text{font-size:1.1rem;font-weight:700;color:var(--navy);letter-spacing:-0.3px}
+.logo-sub{font-size:0.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-top:-1px}
 
 /* NAV */
-.nav-tabs { display: flex; gap: 2px; background: var(--glass); border-radius: 10px; padding: 3px; border: 1px solid var(--glass-border); }
-.nav-tab {
-  padding: 7px 18px; border-radius: 8px; border: none;
-  background: transparent; color: var(--text-secondary);
-  font-family: 'Exo 2', sans-serif; font-size: 0.78rem; font-weight: 600;
-  cursor: pointer; letter-spacing: 0.8px; text-transform: uppercase;
-  transition: all 0.25s; position: relative;
+.nav-tabs{display:flex;gap:2px;background:var(--gray-50);border-radius:8px;padding:3px;border:1px solid var(--gray-100)}
+.nav-tab{
+  padding:6px 16px;border-radius:6px;border:none;
+  background:transparent;color:var(--gray-500);
+  font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;
 }
-.nav-tab:hover { color: var(--text-primary); background: var(--glass-hover); }
-.nav-tab.active {
-  color: var(--bg-base); background: linear-gradient(135deg, var(--cyan), #4dd0e1);
-  box-shadow: 0 2px 12px rgba(0,229,255,0.35);
-}
+.nav-tab:hover{color:var(--navy);background:var(--white)}
+.nav-tab.active{color:var(--white);background:var(--navy);box-shadow:var(--shadow-sm)}
 
 /* STATUS */
-.header-status { display: flex; align-items: center; gap: 8px; }
-.status-pill {
-  display: flex; align-items: center; gap: 7px;
-  padding: 5px 12px; border-radius: 20px;
-  background: var(--glass); border: 1px solid var(--glass-border);
-  font-size: 0.72rem; color: var(--text-secondary); font-weight: 600;
-  transition: all 0.3s;
+.status-pill{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;background:var(--gray-50);border:1px solid var(--gray-100);font-size:0.72rem;color:var(--gray-500);font-weight:600;transition:all 0.3s}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--gray-300)}
+.status-pill.online{border-color:var(--teal-100);background:var(--teal-50);color:var(--teal)}
+.status-pill.online .status-dot{background:var(--teal);box-shadow:0 0 6px rgba(13,148,136,0.5)}
+
+/* ═══ MAIN ═════════════════════════════════════════════════════════════════ */
+.main{max-width:1320px;margin:0 auto;padding:24px 2rem 60px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION HEAD */
+.section-head{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between}
+.section-head h2{font-size:1.4rem;font-weight:700;color:var(--navy);letter-spacing:-0.3px}
+.section-head h2 span{color:var(--blue)}
+.section-head p{font-size:0.8rem;color:var(--gray-400);margin-top:3px}
+.badge{font-size:0.65rem;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.badge-blue{background:var(--blue-100);color:var(--blue)}
+.badge-teal{background:var(--teal-100);color:var(--teal)}
+.badge-purple{background:var(--purple-100);color:var(--purple)}
+.badge-amber{background:var(--amber-100);color:var(--amber)}
+
+/* ═══ CARDS ═════════════════════════════════════════════════════════════════ */
+.card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);transition:box-shadow 0.2s}
+.card:hover{box-shadow:var(--shadow-md)}
+.card-body{padding:24px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-header h3{font-size:0.82rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:1px}
+
+/* ═══ UPLOAD ════════════════════════════════════════════════════════════════ */
+.upload-zone{
+  border:2px dashed var(--gray-200);border-radius:var(--radius-lg);
+  padding:64px 32px;text-align:center;cursor:pointer;
+  background:var(--white);transition:all 0.3s;
 }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); transition: all 0.3s; }
-.status-pill.online { border-color: rgba(0,230,118,0.3); background: rgba(0,230,118,0.08); color: var(--emerald); }
-.status-pill.online .status-dot { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: blink-dot 2s ease-in-out infinite; }
-@keyframes blink-dot { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--blue);background:var(--blue-50)}
+.upload-zone input[type=file]{display:none}
+.upload-icon{width:64px;height:64px;border-radius:16px;background:var(--blue-50);border:1px solid var(--blue-100);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px}
+.upload-zone h3{font-size:1.05rem;font-weight:600;color:var(--gray-700);margin-bottom:4px}
+.upload-zone p{font-size:0.8rem;color:var(--gray-400)}
+.upload-zone p em{color:var(--blue);font-style:normal;font-weight:600}
+.upload-result{margin-top:16px;padding:12px 16px;border-radius:var(--radius);font-size:0.78rem;display:none}
+.upload-result.success{background:var(--teal-50);border:1px solid var(--teal-100);color:var(--teal);display:block}
+.upload-result.error{background:var(--red-50);border:1px solid var(--red-100);color:var(--red);display:block}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MAIN & SECTIONS
-   ═══════════════════════════════════════════════════════════════════════════ */
-.main { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 28px 2rem 60px; }
-.section { display: none; }
-.section.active { display: block; animation: sectionIn 0.4s cubic-bezier(.22,1,.36,1); }
-@keyframes sectionIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:translateY(0); } }
+/* ═══ STAT CARDS ════════════════════════════════════════════════════════════ */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-sm);border-left:4px solid transparent}
+.stat-card:nth-child(1){border-left-color:var(--blue)}
+.stat-card:nth-child(2){border-left-color:var(--teal)}
+.stat-card:nth-child(3){border-left-color:var(--amber)}
+.stat-card:nth-child(4){border-left-color:var(--purple)}
+.stat-label{font-size:0.68rem;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.stat-value{font-size:1.9rem;font-weight:700;color:var(--gray-800);letter-spacing:-0.5px}
+.stat-card:nth-child(1) .stat-value{color:var(--blue)}
+.stat-card:nth-child(2) .stat-value{color:var(--teal)}
+.stat-card:nth-child(3) .stat-value{color:var(--amber)}
+.stat-card:nth-child(4) .stat-value{color:var(--purple)}
+.stat-sub{font-size:0.7rem;color:var(--gray-400);margin-top:3px}
 
-/* SECTION HEADER */
-.section-head { margin-bottom: 28px; display: flex; align-items: flex-end; justify-content: space-between; }
-.section-head h2 { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 1px; }
-.section-head h2 span { background: linear-gradient(135deg, var(--cyan), var(--lavender)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.section-head p { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
-.section-badge { font-size: 0.68rem; padding: 4px 12px; border-radius: 20px; background: var(--cyan-dim); color: var(--cyan); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border: 1px solid rgba(0,229,255,0.2); }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   GLASS CARDS
-   ═══════════════════════════════════════════════════════════════════════════ */
-.glass {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: border-color 0.3s, box-shadow 0.3s;
-}
-.glass:hover { border-color: var(--glass-hover); box-shadow: 0 8px 40px rgba(0,0,0,0.3); }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   UPLOAD
-   ═══════════════════════════════════════════════════════════════════════════ */
-.upload-zone {
-  border: 2px dashed rgba(0,229,255,0.25);
-  border-radius: var(--radius-xl);
-  padding: 80px 32px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.35s;
-  background: linear-gradient(135deg, rgba(0,229,255,0.03), rgba(224,64,251,0.03));
-  position: relative; overflow: hidden;
-}
-.upload-zone::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.08) 0%, transparent 70%);
-  opacity: 0; transition: opacity 0.4s;
-}
-.upload-zone:hover::before, .upload-zone.dragover::before { opacity: 1; }
-.upload-zone:hover, .upload-zone.dragover { border-color: var(--cyan); box-shadow: 0 0 60px rgba(0,229,255,0.12); }
-.upload-zone input[type=file] { display: none; }
-
-.upload-icon-wrap { position: relative; z-index: 1; margin-bottom: 20px; }
-.upload-icon {
-  width: 80px; height: 80px; border-radius: 20px; margin: 0 auto;
-  background: linear-gradient(135deg, var(--cyan-dim), var(--magenta-dim));
-  border: 1px solid rgba(0,229,255,0.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 32px;
-  animation: float-icon 3s ease-in-out infinite;
-}
-@keyframes float-icon { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-
-.upload-zone h3 { position: relative; z-index: 1; font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
-.upload-zone p { position: relative; z-index: 1; font-size: 0.78rem; color: var(--text-muted); }
-.upload-zone p em { color: var(--cyan); font-style: normal; font-weight: 600; }
-
-.upload-result { margin-top: 20px; padding: 14px 20px; border-radius: var(--radius-md); font-size: 0.8rem; display: none; }
-.upload-result.success { background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.25); color: var(--emerald); display: block; }
-.upload-result.error { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25); color: var(--coral); display: block; }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   STAT CARDS ROW
-   ═══════════════════════════════════════════════════════════════════════════ */
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-@media(max-width:900px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
-
-.stat-card {
-  padding: 22px 20px; border-radius: var(--radius-lg);
-  background: var(--glass); border: 1px solid var(--glass-border);
-  position: relative; overflow: hidden; transition: transform 0.25s, border-color 0.3s;
-}
-.stat-card:hover { transform: translateY(-3px); border-color: var(--glass-hover); }
-.stat-card .stat-glow {
-  position: absolute; width: 120px; height: 120px; border-radius: 50%;
-  filter: blur(40px); opacity: 0.35; top: -30px;
-}
-.stat-card:nth-child(1) .stat-glow { background: var(--cyan); left: -20px; }
-.stat-card:nth-child(2) .stat-glow { background: var(--magenta); right: -20px; }
-.stat-card:nth-child(3) .stat-glow { background: var(--amber); left: -20px; }
-.stat-card:nth-child(4) .stat-glow { background: var(--emerald); right: -20px; }
-
-.stat-card .stat-label { position: relative; z-index: 1; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 10px; }
-.stat-card .stat-value { position: relative; z-index: 1; font-family: 'Rajdhani', sans-serif; font-size: 2rem; font-weight: 700; }
-.stat-card:nth-child(1) .stat-value { color: var(--cyan); }
-.stat-card:nth-child(2) .stat-value { color: var(--magenta); }
-.stat-card:nth-child(3) .stat-value { color: var(--amber); }
-.stat-card:nth-child(4) .stat-value { color: var(--emerald); }
-.stat-card .stat-sub { position: relative; z-index: 1; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PANEL GRID
-   ═══════════════════════════════════════════════════════════════════════════ */
-.panel-grid { display: grid; gap: 18px; }
-.panel-grid.two-col { grid-template-columns: 1fr 1fr; }
-@media(max-width:900px) { .panel-grid.two-col { grid-template-columns: 1fr; } }
-
-.panel { padding: 24px; }
-.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.panel-header h3 { font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 1.5px; }
-.panel-badge { font-size: 0.62rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
-.badge-cyan { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); }
-.badge-magenta { background: var(--magenta-dim); color: var(--magenta); border: 1px solid rgba(224,64,251,0.2); }
-.badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,171,0,0.2); }
-.badge-emerald { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(0,230,118,0.2); }
-
-.chart-wrap { position: relative; width: 100%; height: 260px; }
+/* ═══ GRID ═════════════════════════════════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.chart-wrap{position:relative;width:100%;height:250px}
 
 /* SELECT */
-.styled-select {
-  background: var(--glass); border: 1px solid var(--glass-border);
-  color: var(--text-primary); padding: 6px 14px; border-radius: var(--radius-sm);
-  font-family: 'Exo 2', sans-serif; font-size: 0.74rem; font-weight: 600;
-  cursor: pointer; outline: none; transition: border-color 0.2s;
-  -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 10px center;
-  padding-right: 28px;
+.styled-select{
+  background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600);
+  padding:6px 32px 6px 10px;border-radius:6px;
+  font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:600;
+  cursor:pointer;outline:none;transition:border-color 0.2s;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
 }
-.styled-select:focus { border-color: var(--cyan); }
-.styled-select option { background: var(--bg-layer1); color: var(--text-primary); }
+.styled-select:focus{border-color:var(--blue)}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   KEYWORD CLOUD
-   ═══════════════════════════════════════════════════════════════════════════ */
-.keyword-cloud { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0; }
-.kw-tag {
-  padding: 6px 16px; border-radius: 30px; font-size: 0.75rem; font-weight: 600;
-  border: 1px solid transparent; cursor: default;
-  transition: all 0.25s; position: relative; overflow: hidden;
-}
-.kw-tag::before { content:''; position:absolute; inset:0; opacity:0; transition: opacity 0.3s; }
-.kw-tag:hover::before { opacity:1; }
-.kw-tag:hover { transform: scale(1.06); }
+/* ═══ KEYWORD CLOUD ════════════════════════════════════════════════════════ */
+.keyword-cloud{display:flex;flex-wrap:wrap;gap:7px;padding:4px 0}
+.kw-tag{padding:5px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;cursor:default;transition:transform 0.2s,box-shadow 0.2s}
+.kw-tag:hover{transform:scale(1.05);box-shadow:var(--shadow-sm)}
+.kw-tag.high{background:var(--blue-100);color:var(--blue);border:1px solid var(--blue-100)}
+.kw-tag.med{background:var(--purple-100);color:var(--purple);border:1px solid var(--purple-100)}
+.kw-tag.low{background:var(--gray-50);color:var(--gray-500);border:1px solid var(--gray-100)}
 
-.kw-tag.high { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3); color: var(--cyan); }
-.kw-tag.high::before { background: rgba(0,229,255,0.08); }
-.kw-tag.med { background: rgba(224,64,251,0.1); border-color: rgba(224,64,251,0.3); color: var(--magenta); }
-.kw-tag.med::before { background: rgba(224,64,251,0.08); }
-.kw-tag.low { background: rgba(139,148,158,0.08); border-color: rgba(139,148,158,0.2); color: var(--text-secondary); }
-.kw-tag.low::before { background: rgba(139,148,158,0.06); }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCATTER CANVAS
-   ═══════════════════════════════════════════════════════════════════════════ */
-.scatter-canvas {
-  width: 100%; height: 340px; border-radius: var(--radius-md);
-  background: rgba(13,17,23,0.6); border: 1px solid var(--glass-border);
-}
+/* ═══ SCATTER ══════════════════════════════════════════════════════════════ */
+.scatter-canvas{width:100%;height:320px;border-radius:var(--radius);background:var(--gray-50);border:1px solid var(--gray-100)}
 
 /* CLUSTER CARDS */
-.cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 18px; }
-.cluster-card {
-  background: rgba(13,17,23,0.6); border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md); padding: 16px;
-  transition: border-color 0.3s, transform 0.2s;
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+.cluster-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius);padding:14px;border-top:3px solid transparent}
+.c-label{font-size:0.6rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.c-size{font-size:1.4rem;font-weight:700;margin:3px 0;color:var(--gray-800)}
+.c-terms{font-size:0.7rem;color:var(--gray-400);line-height:1.9}
+.c-terms span{display:inline-block;margin-right:3px}
+
+/* ═══ ML BARS ══════════════════════════════════════════════════════════════ */
+.feat-bar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.feat-label{font-size:0.74rem;color:var(--gray-600);width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.feat-track{flex:1;height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden}
+.feat-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width 1s ease}
+.feat-val{font-size:0.7rem;color:var(--gray-400);width:44px;text-align:right;font-weight:600;font-family:'JetBrains Mono',monospace}
+.accuracy-pill{display:inline-flex;align-items:center;gap:5px;background:var(--teal-50);border:1px solid var(--teal-100);border-radius:20px;padding:3px 12px;font-size:0.73rem;color:var(--teal);font-weight:700}
+
+/* ═══ MITIGATION ═══════════════════════════════════════════════════════════ */
+.strat-grid{display:grid;gap:12px}
+.strat-card{
+  background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-lg);
+  padding:20px 22px;display:flex;gap:16px;align-items:flex-start;
+  box-shadow:var(--shadow-sm);transition:box-shadow 0.2s,transform 0.15s;
+  border-left:4px solid transparent;
 }
-.cluster-card:hover { border-color: var(--glass-hover); transform: translateY(-2px); }
-.cluster-card .c-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
-.cluster-card .c-size { font-family: 'Rajdhani', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 4px 0; }
-.cluster-card .c-terms { font-size: 0.7rem; color: var(--text-muted); line-height: 2; }
-.cluster-card .c-terms span { display: inline-block; margin-right: 4px; }
+.strat-card:hover{box-shadow:var(--shadow-md);transform:translateX(2px)}
+.strat-card:nth-child(1){border-left-color:var(--coral)}
+.strat-card:nth-child(2){border-left-color:var(--amber)}
+.strat-card:nth-child(3){border-left-color:var(--blue)}
+.strat-card:nth-child(4){border-left-color:var(--purple)}
+.strat-card:nth-child(5){border-left-color:var(--teal)}
+.strat-card:nth-child(6){border-left-color:var(--gray-400)}
+.strat-num{min-width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0}
+.sn-1{background:var(--coral-50);color:var(--coral)}
+.sn-2{background:var(--amber-50);color:var(--amber)}
+.sn-3{background:var(--blue-50);color:var(--blue)}
+.sn-4{background:var(--purple-50);color:var(--purple)}
+.sn-5{background:var(--teal-50);color:var(--teal)}
+.sn-6{background:var(--gray-50);color:var(--gray-500)}
+.strat-content h4{font-size:0.9rem;font-weight:700;color:var(--gray-800);margin-bottom:4px}
+.strat-content p{font-size:0.76rem;color:var(--gray-500);line-height:1.55}
+.strat-meta{margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+.strat-meta span{font-size:0.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
+.strat-meta .ev-alta{color:var(--teal)}
+.strat-meta .ev-media{color:var(--amber)}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ML — FEATURE BARS
-   ═══════════════════════════════════════════════════════════════════════════ */
-.feat-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.feat-label { font-size: 0.74rem; color: var(--text-primary); width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-.feat-track { flex: 1; height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
-.feat-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--cyan), var(--magenta)); transition: width 1s cubic-bezier(.22,1,.36,1); box-shadow: 0 0 8px rgba(0,229,255,0.3); }
-.feat-val { font-size: 0.68rem; color: var(--text-muted); width: 48px; text-align: right; font-weight: 600; font-family: 'Rajdhani', sans-serif; }
+/* ═══ LOADING ═══════════════════════════════════════════════════════════════ */
+.loading-overlay{display:none;position:fixed;inset:0;z-index:999;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);justify-content:center;align-items:center}
+.loading-overlay.show{display:flex}
+.spinner-wrap{text-align:center;background:var(--white);padding:32px 48px;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}
+.spinner{width:32px;height:32px;border:3px solid var(--gray-100);border-top-color:var(--blue);border-radius:50%;animation:spin 0.6s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-text{font-size:0.8rem;color:var(--gray-500);font-weight:600}
+.inline-spinner{display:flex;align-items:center;justify-content:center;padding:36px}
+.inline-spinner .spinner{width:24px;height:24px;border-width:2.5px}
 
-.accuracy-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3);
-  border-radius: 20px; padding: 4px 14px;
-  font-size: 0.75rem; color: var(--emerald); font-weight: 700;
-  font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MITIGATION STRATEGIES
-   ═══════════════════════════════════════════════════════════════════════════ */
-.strat-grid { display: grid; gap: 14px; }
-.strat-card {
-  padding: 22px 24px; border-radius: var(--radius-lg);
-  background: var(--glass); border: 1px solid var(--glass-border);
-  display: flex; gap: 20px; align-items: flex-start;
-  transition: border-color 0.3s, transform 0.2s;
-  position: relative; overflow: hidden;
-}
-.strat-card::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  transition: opacity 0.3s;
-}
-.strat-card:nth-child(1)::before { background: var(--coral); }
-.strat-card:nth-child(2)::before { background: var(--amber); }
-.strat-card:nth-child(3)::before { background: var(--cyan); }
-.strat-card:nth-child(4)::before { background: var(--magenta); }
-.strat-card:nth-child(5)::before { background: var(--lavender); }
-.strat-card:nth-child(6)::before { background: var(--emerald); }
-
-.strat-card:hover { border-color: var(--glass-hover); transform: translateX(4px); }
-
-.strat-num {
-  min-width: 38px; height: 38px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
-  flex-shrink: 0;
-}
-.sn-1 { background: var(--coral-dim); color: var(--coral); border: 1px solid rgba(255,107,107,0.25); }
-.sn-2 { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,171,0,0.25); }
-.sn-3 { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
-.sn-4 { background: var(--magenta-dim); color: var(--magenta); border: 1px solid rgba(224,64,251,0.25); }
-.sn-5 { background: rgba(179,136,255,0.12); color: var(--lavender); border: 1px solid rgba(179,136,255,0.25); }
-.sn-6 { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(0,230,118,0.25); }
-
-.strat-content h4 { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; letter-spacing: 0.5px; }
-.strat-content p { font-size: 0.76rem; color: var(--text-secondary); line-height: 1.6; }
-.strat-meta { margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
-.strat-meta span { font-size: 0.66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.strat-meta .ev-high { color: var(--emerald); }
-.strat-meta .ev-med { color: var(--amber); }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   LOADING
-   ═══════════════════════════════════════════════════════════════════════════ */
-.loading-overlay {
-  display: none; position: fixed; inset: 0; z-index: 999;
-  background: rgba(13,17,23,0.75); backdrop-filter: blur(6px);
-  justify-content: center; align-items: center;
-}
-.loading-overlay.show { display: flex; }
-.spinner-wrap { text-align: center; }
-.spinner {
-  width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08);
-  border-top-color: var(--cyan); border-radius: 50%;
-  animation: spin 0.65s linear infinite; margin: 0 auto 14px;
-  box-shadow: 0 0 16px rgba(0,229,255,0.25);
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner-text { font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; }
-
-.inline-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; }
-.inline-spinner .spinner { width: 28px; height: 28px; border-width: 2px; box-shadow: none; }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+/* ═══ SCROLLBAR ═════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--gray-300)}
 
 </style>
 </head>
 <body>
-
-<!-- BG -->
-<canvas id="bg-canvas"></canvas>
-<div class="bg-gradient-overlay"></div>
 
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
@@ -404,16 +250,15 @@ body {
   </div>
 </div>
 
-<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<!-- HEADER -->
 <header class="header">
   <div class="logo">
     <div class="logo-icon">✈</div>
     <div>
       <div class="logo-text">ASRS Analysis</div>
-      <div class="logo-sub">Detección de Patrones de Error Humano</div>
+      <div class="logo-sub">Detección de Patrones · Error Humano</div>
     </div>
   </div>
-
   <nav class="nav-tabs">
     <button class="nav-tab active" data-tab="upload">Datos</button>
     <button class="nav-tab" data-tab="eda">EDA</button>
@@ -422,576 +267,374 @@ body {
     <button class="nav-tab" data-tab="ml">Riesgo ML</button>
     <button class="nav-tab" data-tab="mitigation">Mitigación</button>
   </nav>
-
   <div class="status-pill" id="statusPill">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">Desconectado</span>
   </div>
 </header>
 
-<!-- ═══ MAIN ═════════════════════════════════════════════════════════════════ -->
+<!-- MAIN -->
 <main class="main">
 
-  <!-- ─── UPLOAD ──────────────────────────────────────────────────────────── -->
+  <!-- UPLOAD -->
   <div class="section active" id="sec-upload">
     <div class="section-head">
-      <div>
-        <h2>Carga de <span>Dataset</span></h2>
-        <p>Sube tu archivo ASRS_DBOnline.csv para inicializar el motor de análisis</p>
-      </div>
-      <span class="section-badge">Paso 1 / 6</span>
+      <div><h2>Carga de <span>Dataset</span></h2><p>Sube tu archivo ASRS_DBOnline.csv para inicializar el motor de análisis</p></div>
+      <span class="badge badge-blue">Paso 1 / 6</span>
     </div>
     <div class="upload-zone" id="uploadZone">
-      <div class="upload-icon-wrap">
-        <div class="upload-icon">📂</div>
-      </div>
+      <div class="upload-icon">📂</div>
       <h3>Arrastra tu archivo CSV aquí</h3>
       <p>o haz clic para buscar — Esperado: <em>ASRS_DBOnline.csv</em></p>
-      <input type="file" id="fileInput" accept=".csv" />
+      <input type="file" id="fileInput" accept=".csv"/>
     </div>
     <div class="upload-result" id="uploadResult"></div>
   </div>
 
-  <!-- ─── EDA ─────────────────────────────────────────────────────────────── -->
+  <!-- EDA -->
   <div class="section" id="sec-eda">
     <div class="section-head">
-      <div>
-        <h2>Análisis <span>Exploratorio</span></h2>
-        <p>Distribución, línea temporal y caracterización de variables</p>
-      </div>
-      <span class="section-badge">EDA</span>
+      <div><h2>Análisis <span>Exploratorio</span></h2><p>Distribución de variables, línea temporal y resumen estadístico</p></div>
+      <span class="badge badge-blue">EDA</span>
     </div>
-
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-glow"></div><div class="stat-label">Incidentes Totales</div><div class="stat-value" id="statTotal">—</div><div class="stat-sub">Registros en dataset</div></div>
-      <div class="stat-card"><div class="stat-glow"></div><div class="stat-label">Variables</div><div class="stat-value" id="statCols">—</div><div class="stat-sub">Columnas analizadas</div></div>
-      <div class="stat-card"><div class="stat-glow"></div><div class="stat-label">Rango Temporal</div><div class="stat-value" id="statRange" style="font-size:1.1rem">—</div><div class="stat-sub">Período cubierto</div></div>
-      <div class="stat-card"><div class="stat-glow"></div><div class="stat-label">Categoría Principal</div><div class="stat-value" id="statTop" style="font-size:1rem">—</div><div class="stat-sub">Tipo más frecuente</div></div>
+      <div class="stat-card"><div class="stat-label">Incidentes Totales</div><div class="stat-value" id="statTotal">—</div><div class="stat-sub">Registros en dataset</div></div>
+      <div class="stat-card"><div class="stat-label">Variables</div><div class="stat-value" id="statCols">—</div><div class="stat-sub">Columnas analizadas</div></div>
+      <div class="stat-card"><div class="stat-label">Rango Temporal</div><div class="stat-value" id="statRange" style="font-size:1.1rem">—</div><div class="stat-sub">Período cubierto</div></div>
+      <div class="stat-card"><div class="stat-label">Categoría Principal</div><div class="stat-value" id="statTop" style="font-size:0.95rem">—</div><div class="stat-sub">Tipo más frecuente</div></div>
     </div>
-
-    <div class="panel-grid two-col">
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Distribución de Variables</h3>
-          <select class="styled-select" id="distSelect" onchange="loadDistribution()"></select>
-        </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Distribución de Variables</h3><select class="styled-select" id="distSelect" onchange="loadDistribution()"></select></div>
         <div class="chart-wrap"><canvas id="chartDist"></canvas></div>
-      </div>
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Línea Temporal</h3>
-          <span class="panel-badge badge-cyan">Incidentes / Mes</span>
-        </div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Línea Temporal</h3><span class="badge badge-teal">Incidentes / Período</span></div>
         <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
-      </div>
+      </div></div>
     </div>
   </div>
 
-  <!-- ─── NLP ─────────────────────────────────────────────────────────────── -->
+  <!-- NLP -->
   <div class="section" id="sec-nlp">
     <div class="section-head">
-      <div>
-        <h2>Procesamiento de <span>Lenguaje Natural</span></h2>
-        <p>Extracción de palabras clave mediante TF-IDF y análisis de bigramas</p>
-      </div>
-      <span class="section-badge">NLP</span>
+      <div><h2>Procesamiento de <span>Lenguaje Natural</span></h2><p>Extracción de palabras clave TF-IDF y análisis de bigramas en narrativas de incidentes</p></div>
+      <span class="badge badge-purple">NLP</span>
     </div>
-    <div class="panel-grid two-col">
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Palabras Clave (TF-IDF)</h3>
-          <span class="panel-badge badge-magenta">Auto-detectado</span>
-        </div>
-        <div class="keyword-cloud" id="keywordCloud">
-          <div class="inline-spinner"><div class="spinner"></div></div>
-        </div>
-      </div>
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Principales Bigramas</h3>
-          <span class="panel-badge badge-cyan">Pares de Palabras</span>
-        </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Palabras Clave (TF-IDF)</h3><span class="badge badge-purple">Auto-detectado</span></div>
+        <div class="keyword-cloud" id="keywordCloud"><div class="inline-spinner"><div class="spinner"></div></div></div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Principales Bigramas</h3><span class="badge badge-blue">Pares de Palabras</span></div>
         <div class="chart-wrap"><canvas id="chartBigrams"></canvas></div>
-      </div>
+      </div></div>
     </div>
   </div>
 
-  <!-- ─── CLUSTERING ──────────────────────────────────────────────────────── -->
+  <!-- CLUSTERING -->
   <div class="section" id="sec-clustering">
     <div class="section-head">
-      <div>
-        <h2>Agrupamiento <span>No Supervisado</span></h2>
-        <p>K-Means sobre vectores TF-IDF — identificación de patrones latentes de error humano</p>
-      </div>
-      <span class="section-badge">K-Means</span>
+      <div><h2>Agrupamiento <span>No Supervisado</span></h2><p>K-Means sobre vectores TF-IDF — identificación de patrones latentes</p></div>
+      <span class="badge badge-teal">K-Means</span>
     </div>
-    <div class="panel glass">
-      <div class="panel-header">
-        <h3>Proyección PCA 2D — Dispersión de Clusters</h3>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <label style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;">Clusters:</label>
+    <div class="card"><div class="card-body">
+      <div class="card-header">
+        <h3>Proyección PCA 2D</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:0.72rem;color:var(--gray-400);font-weight:600">Clusters:</label>
           <select class="styled-select" id="clusterSelect" onchange="loadClustering()">
-            <option value="3">3</option><option value="4">4</option>
-            <option value="5" selected>5</option><option value="6">6</option>
-            <option value="7">7</option><option value="8">8</option>
+            <option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
           </select>
         </div>
       </div>
       <canvas class="scatter-canvas" id="scatterCanvas"></canvas>
       <div class="cluster-grid" id="clusterCards"></div>
-    </div>
+    </div></div>
   </div>
 
-  <!-- ─── ML RISK ──────────────────────────────────────────────────────────── -->
+  <!-- ML -->
   <div class="section" id="sec-ml">
     <div class="section-head">
-      <div>
-        <h2>Segmentación de <span>Riesgo Operativo</span></h2>
-        <p>Clasificación con Random Forest — identificación de perfiles de riesgo recurrentes</p>
-      </div>
-      <span class="section-badge">Random Forest</span>
+      <div><h2>Segmentación de <span>Riesgo Operativo</span></h2><p>Clasificación con Random Forest — perfiles de riesgo recurrentes</p></div>
+      <span class="badge badge-teal">Random Forest</span>
     </div>
-    <div class="panel-grid two-col">
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Importancia de Características</h3>
-          <span class="accuracy-pill" id="mlAccBadge" style="display:none;"></span>
-        </div>
-        <div id="featBars">
-          <div class="inline-spinner"><div class="spinner"></div></div>
-        </div>
-      </div>
-      <div class="panel glass">
-        <div class="panel-header">
-          <h3>Clases de Riesgo</h3>
-          <span class="panel-badge badge-emerald">Clasificador RF</span>
-        </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Importancia de Características</h3><span class="accuracy-pill" id="mlAccBadge" style="display:none"></span></div>
+        <div id="featBars"><div class="inline-spinner"><div class="spinner"></div></div></div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="card-header"><h3>Clases de Riesgo</h3><span class="badge badge-teal">Clasificador RF</span></div>
         <div class="chart-wrap"><canvas id="chartRiskClasses"></canvas></div>
-      </div>
+      </div></div>
     </div>
   </div>
 
-  <!-- ─── MITIGATION ──────────────────────────────────────────────────────── -->
+  <!-- MITIGATION -->
   <div class="section" id="sec-mitigation">
     <div class="section-head">
-      <div>
-        <h2>Estrategias de <span>Mitigación</span></h2>
-        <p>Recomendaciones basadas en evidencia derivadas de los patrones y perfiles de riesgo identificados</p>
-      </div>
-      <span class="section-badge">Evidencia</span>
+      <div><h2>Estrategias de <span>Mitigación</span></h2><p>Recomendaciones basadas en evidencia derivadas de los patrones identificados</p></div>
+      <span class="badge badge-amber">Evidencia</span>
     </div>
-    <div class="strat-grid" id="stratGrid">
-      <div class="inline-spinner"><div class="spinner"></div></div>
-    </div>
+    <div class="strat-grid" id="stratGrid"><div class="inline-spinner"><div class="spinner"></div></div></div>
   </div>
 
 </main>
 
-<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
 <script>
-// ══════════════════════════════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════════════════════════════
 const API = "https://asrs-human-error-analysis.onrender.com";
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PARTICLE BACKGROUND
-// ══════════════════════════════════════════════════════════════════════════════
-(function initParticles() {
-  const canvas = document.getElementById("bg-canvas");
-  const ctx = canvas.getContext("2d");
-  let particles = [], W, H;
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  window.addEventListener("resize", resize);
-  resize();
-
-  class Particle {
-    constructor() { this.reset(); }
-    reset() {
-      this.x = Math.random() * W;
-      this.y = Math.random() * H;
-      this.size = Math.random() * 1.5 + 0.3;
-      this.speedX = (Math.random() - 0.5) * 0.3;
-      this.speedY = (Math.random() - 0.5) * 0.3;
-      this.opacity = Math.random() * 0.4 + 0.05;
-      this.hue = Math.random() < 0.6 ? 190 : (Math.random() < 0.5 ? 280 : 40);
-    }
-    update() {
-      this.x += this.speedX; this.y += this.speedY;
-      if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.opacity})`;
-      ctx.fill();
-    }
-  }
-
-  for (let i = 0; i < 70; i++) particles.push(new Particle());
-
-  function drawConnections() {
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 140) {
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `hsla(190, 80%, 60%, ${0.06 * (1 - dist/140)})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-    }
-  }
-
-  function loop() {
-    ctx.clearRect(0, 0, W, H);
-    particles.forEach(p => { p.update(); p.draw(); });
-    drawConnections();
-    requestAnimationFrame(loop);
-  }
-  loop();
-})();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// COLORS
-// ══════════════════════════════════════════════════════════════════════════════
-const COLORS = ["#00e5ff","#e040fb","#ffab00","#00e676","#ff6b6b","#b388ff","#4dd0e1","#f06292"];
-
-// ══════════════════════════════════════════════════════════════════════════════
-// LOADING
-// ══════════════════════════════════════════════════════════════════════════════
-function showLoading(msg="Procesando...") { document.getElementById("loadingText").textContent=msg; document.getElementById("loadingOverlay").classList.add("show"); }
-function hideLoading() { document.getElementById("loadingOverlay").classList.remove("show"); }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// HEALTH
-// ══════════════════════════════════════════════════════════════════════════════
-async function checkHealth() {
-  const pill = document.getElementById("statusPill");
-  try {
-    const r = await fetch(API+"/health"); const d = await r.json();
-    if (d.loaded) {
-      pill.className = "status-pill online";
-      document.getElementById("statusText").textContent = `Conectado · ${d.rows.toLocaleString()} filas`;
-    } else {
-      pill.className = "status-pill online";
-      document.getElementById("statusText").textContent = "Conectado · Sin datos";
-    }
-  } catch(e) {
-    pill.className = "status-pill";
-    document.getElementById("statusText").textContent = "Desconectado";
-  }
-}
-setInterval(checkHealth, 5000);
-checkHealth();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TABS
-// ══════════════════════════════════════════════════════════════════════════════
+const COLORS = ["#3b82f6","#0d9488","#7c3aed","#d97706","#e11d48","#64748b","#06b6d4","#ec4899"];
+let charts = {};
 const _loaded = {};
-document.querySelectorAll(".nav-tab").forEach(btn => {
-  btn.addEventListener("click", function() {
-    const tab = this.dataset.tab;
-    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-    document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+
+// LOADING
+function showLoading(m="Procesando..."){document.getElementById("loadingText").textContent=m;document.getElementById("loadingOverlay").classList.add("show")}
+function hideLoading(){document.getElementById("loadingOverlay").classList.remove("show")}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+// HEALTH
+async function checkHealth(){
+  const pill=document.getElementById("statusPill");
+  try{
+    const r=await fetch(API+"/health");const d=await r.json();
+    pill.className="status-pill"+(d.loaded?" online":"");
+    document.getElementById("statusText").textContent=d.loaded?`Conectado · ${d.rows.toLocaleString()} filas`:"Conectado · Sin datos";
+  }catch(e){pill.className="status-pill";document.getElementById("statusText").textContent="Desconectado"}
+}
+setInterval(checkHealth,5000);checkHealth();
+
+// TABS
+document.querySelectorAll(".nav-tab").forEach(btn=>{
+  btn.addEventListener("click",function(){
+    const tab=this.dataset.tab;
+    document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
     document.getElementById("sec-"+tab).classList.add("active");
     this.classList.add("active");
-
-    if (!_loaded[tab]) {
-      _loaded[tab] = true;
-      if (tab==="eda") loadEDA();
-      if (tab==="nlp") loadNLP();
-      if (tab==="clustering") loadClustering();
-      if (tab==="ml") loadML();
-      if (tab==="mitigation") loadMitigation();
+    if(!_loaded[tab]){_loaded[tab]=true;
+      if(tab==="eda")loadEDA();
+      if(tab==="nlp")loadNLP();
+      if(tab==="clustering")loadClustering();
+      if(tab==="ml")loadML();
+      if(tab==="mitigation")loadMitigation();
     }
   });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
 // UPLOAD
-// ══════════════════════════════════════════════════════════════════════════════
-const uploadZone = document.getElementById("uploadZone");
-const fileInput = document.getElementById("fileInput");
-uploadZone.addEventListener("click", () => fileInput.click());
-uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("dragover"); });
-uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
-uploadZone.addEventListener("drop", e => { e.preventDefault(); uploadZone.classList.remove("dragover"); if(e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]); });
-fileInput.addEventListener("change", e => { if(e.target.files[0]) doUpload(e.target.files[0]); });
+const uploadZone=document.getElementById("uploadZone");
+const fileInput=document.getElementById("fileInput");
+uploadZone.addEventListener("click",()=>fileInput.click());
+uploadZone.addEventListener("dragover",e=>{e.preventDefault();uploadZone.classList.add("dragover")});
+uploadZone.addEventListener("dragleave",()=>uploadZone.classList.remove("dragover"));
+uploadZone.addEventListener("drop",e=>{e.preventDefault();uploadZone.classList.remove("dragover");if(e.dataTransfer.files[0])doUpload(e.dataTransfer.files[0])});
+fileInput.addEventListener("change",e=>{if(e.target.files[0])doUpload(e.target.files[0])});
 
-async function doUpload(file) {
-  showLoading("Subiendo " + file.name + "...");
-  const res = document.getElementById("uploadResult");
-  res.className = "upload-result";
-  try {
-    const fd = new FormData(); fd.append("file", file);
-    const r = await fetch(API+"/upload", { method:"POST", body:fd });
-    const d = await r.json();
-    if (r.ok) {
-      res.className = "upload-result success";
-      res.innerHTML = `✔ <strong>${d.rows.toLocaleString()} registros</strong> cargados con <strong>${d.columns.length} variables</strong>.<br><small style="opacity:0.7;">Columnas detectadas: ${d.columns.join(", ")}</small>`;
-      checkHealth();
-      _loaded["eda"] = false;
-    } else {
-      res.className = "upload-result error";
-      res.textContent = "✘ " + (d.detail || "Error al subir.");
-    }
-  } catch(e) {
-    res.className = "upload-result error";
-    res.textContent = "✘ Error de conexión. ¿Está el API activo?";
-  }
+async function doUpload(file){
+  showLoading("Subiendo "+file.name+"...");
+  const res=document.getElementById("uploadResult");res.className="upload-result";
+  try{
+    const fd=new FormData();fd.append("file",file);
+    const r=await fetch(API+"/upload",{method:"POST",body:fd});const d=await r.json();
+    if(r.ok){
+      res.className="upload-result success";
+      res.innerHTML=`✔ <strong>${d.rows.toLocaleString()} registros</strong> cargados con <strong>${d.columns.length} variables</strong>.<br><small style="opacity:0.7">Columnas: ${d.columns.join(", ")}</small>`;
+      checkHealth();_loaded["eda"]=false;
+    }else{res.className="upload-result error";res.textContent="✘ "+(d.detail||"Error al subir.")}
+  }catch(e){res.className="upload-result error";res.textContent="✘ Error de conexión. ¿Está el API activo?"}
   hideLoading();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // CHART DEFAULTS
-// ══════════════════════════════════════════════════════════════════════════════
-let charts = {};
-function destroyChart(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
-
-const cDef = {
-  responsive:true, maintainAspectRatio:false,
-  animation: { duration: 800, easing: 'easeOutQuart' },
-  plugins: { legend: { labels: { color:"#8b949e", font:{size:11, family:"Exo 2"}, padding:16 } } },
-  scales: {
-    x: { ticks:{color:"#484f58",font:{size:10}}, grid:{color:"rgba(255,255,255,0.04)"}, border:{color:"rgba(255,255,255,0.06)"} },
-    y: { ticks:{color:"#484f58",font:{size:10}}, grid:{color:"rgba(255,255,255,0.04)"}, border:{color:"rgba(255,255,255,0.06)"} }
+const cDef={
+  responsive:true,maintainAspectRatio:false,
+  animation:{duration:700,easing:'easeOutQuart'},
+  plugins:{legend:{labels:{color:"#475569",font:{size:11,family:"Inter"},padding:14}}},
+  scales:{
+    x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"#f1f5f9"},border:{color:"#e2e8f0"}},
+    y:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"#f1f5f9"},border:{color:"#e2e8f0"}}
   }
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
 // EDA
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadEDA() {
+async function loadEDA(){
   showLoading("Cargando análisis exploratorio...");
-  try {
-    const ov = await (await fetch(API+"/dashboard/overview")).json();
-    document.getElementById("statTotal").textContent = ov.total_incidents.toLocaleString();
-    document.getElementById("statCols").textContent = ov.total_columns;
-    if (ov.date_range) document.getElementById("statRange").textContent = ov.date_range.from+" → "+ov.date_range.to;
-    if (ov.top_type) { const [k]=Object.keys(ov.top_type); document.getElementById("statTop").textContent=k; }
+  try{
+    const ov=await(await fetch(API+"/dashboard/overview")).json();
+    document.getElementById("statTotal").textContent=ov.total_incidents.toLocaleString();
+    document.getElementById("statCols").textContent=ov.total_columns;
+    if(ov.date_range)document.getElementById("statRange").textContent=ov.date_range.from+" → "+ov.date_range.to;
+    if(ov.top_type){const[k]=Object.keys(ov.top_type.data);document.getElementById("statTop").textContent=k}
 
-    const cols = await (await fetch(API+"/eda/columns")).json();
-    const sel = document.getElementById("distSelect");
-    sel.innerHTML = "";
-    cols.columns.forEach(c => { const o=document.createElement("option"); o.value=c; o.textContent=c; sel.appendChild(o); });
-    loadDistribution();
+    // Populate dropdown with CATEGORICAL columns only
+    const cols=await(await fetch(API+"/eda/columns")).json();
+    const sel=document.getElementById("distSelect");sel.innerHTML="";
+    cols.columns.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o)});
+    if(cols.columns.length>0)loadDistribution();
 
-    const tl = await (await fetch(API+"/eda/timeline")).json();
-    if (tl.data && tl.data.length) {
+    // Timeline
+    const tl=await(await fetch(API+"/eda/timeline")).json();
+    if(tl.data&&tl.data.length){
       destroyChart("timeline");
-      const ctx = document.getElementById("chartTimeline").getContext("2d");
-      charts["timeline"] = new Chart(ctx, {
-        type:"line",
-        data: {
-          labels: tl.data.map(d=>d.period),
+      const ctx=document.getElementById("chartTimeline").getContext("2d");
+      const isLine=tl.type==="yearly"||tl.type==="monthly";
+      charts["timeline"]=new Chart(ctx,{
+        type:isLine?"bar":"bar",
+        data:{
+          labels:tl.data.map(d=>d.period),
           datasets:[{
             label:"Incidentes",
-            data: tl.data.map(d=>d.count),
-            borderColor:"#00e5ff",
-            backgroundColor:"rgba(0,229,255,0.06)",
-            fill:true, tension:0.4, pointRadius:0,
-            pointHoverRadius:5, pointHoverBackgroundColor:"#00e5ff",
-            borderWidth:2
+            data:tl.data.map(d=>d.count),
+            backgroundColor:"rgba(59,130,246,0.6)",
+            borderColor:"#3b82f6",borderWidth:1,borderRadius:4,borderSkipped:false
           }]
         },
-        options:{ ...cDef, plugins:{...cDef.plugins, legend:{display:false}},
-          scales:{...cDef.scales,
-            x:{...cDef.scales.x, ticks:{...cDef.scales.x.ticks, maxRotation:45, maxTicksLimit:12}},
-            y:{...cDef.scales.y, beginAtZero:true}
-          }
+        options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}},
+          scales:{...cDef.scales,x:{...cDef.scales.x,ticks:{...cDef.scales.x.ticks,maxRotation:45,maxTicksLimit:14}},y:{...cDef.scales.y,beginAtZero:true}}
         }
       });
     }
-  } catch(e) { console.error(e); }
+  }catch(e){console.error("EDA:",e)}
   hideLoading();
 }
 
-async function loadDistribution() {
-  const col = document.getElementById("distSelect").value;
-  if (!col) return;
+async function loadDistribution(){
+  const col=document.getElementById("distSelect").value;if(!col)return;
   showLoading("Cargando distribución...");
-  try {
-    const d = await (await fetch(API+"/eda/distribution/"+encodeURIComponent(col))).json();
+  try{
+    const d=await(await fetch(API+"/eda/distribution/"+encodeURIComponent(col))).json();
     destroyChart("dist");
-    const ctx = document.getElementById("chartDist").getContext("2d");
-    charts["dist"] = new Chart(ctx, {
+    const ctx=document.getElementById("chartDist").getContext("2d");
+    charts["dist"]=new Chart(ctx,{
       type:"bar",
-      data: {
-        labels: d.data.map(x=>x.label.substring(0,24)),
-        datasets:[{
-          label: col,
-          data: d.data.map(x=>x.value),
-          backgroundColor: d.data.map((_,i)=>COLORS[i%COLORS.length]+"99"),
-          borderColor: d.data.map((_,i)=>COLORS[i%COLORS.length]),
-          borderWidth:1, borderRadius:4, borderSkipped:false
-        }]
+      data:{
+        labels:d.data.map(x=>x.label.substring(0,28)),
+        datasets:[{label:col,data:d.data.map(x=>x.value),
+          backgroundColor:d.data.map((_,i)=>COLORS[i%COLORS.length]+"aa"),
+          borderColor:d.data.map((_,i)=>COLORS[i%COLORS.length]),
+          borderWidth:1,borderRadius:4,borderSkipped:false}]
       },
-      options:{ ...cDef, indexAxis:"y", plugins:{...cDef.plugins, legend:{display:false}},
-        scales:{...cDef.scales, x:{...cDef.scales.x, beginAtZero:true}}
-      }
+      options:{...cDef,indexAxis:"y",plugins:{...cDef.plugins,legend:{display:false}},
+        scales:{...cDef.scales,x:{...cDef.scales.x,beginAtZero:true}}}
     });
-  } catch(e) { console.error(e); }
+  }catch(e){console.error("Dist:",e)}
   hideLoading();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // NLP
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadNLP() {
+async function loadNLP(){
   showLoading("Analizando texto con NLP...");
-  try {
-    const kw = await (await fetch(API+"/nlp/top-keywords?top_n=28")).json();
-    const cloud = document.getElementById("keywordCloud");
-    cloud.innerHTML = "";
-    if (kw.keywords) {
-      const maxS = Math.max(...kw.keywords.map(k=>k.score));
-      kw.keywords.forEach((k,i) => {
-        const ratio = k.score/maxS;
-        const cls = ratio>0.7?"high":ratio>0.4?"med":"low";
-        const tag = document.createElement("span");
-        tag.className = "kw-tag "+cls;
-        tag.textContent = k.term;
-        tag.style.fontSize = (0.7+ratio*0.3)+"rem";
+  try{
+    const kw=await(await fetch(API+"/nlp/top-keywords?top_n=28")).json();
+    const cloud=document.getElementById("keywordCloud");cloud.innerHTML="";
+    if(kw.keywords){
+      const maxS=Math.max(...kw.keywords.map(k=>k.score));
+      kw.keywords.forEach(k=>{
+        const ratio=k.score/maxS;
+        const cls=ratio>0.7?"high":ratio>0.4?"med":"low";
+        const tag=document.createElement("span");
+        tag.className="kw-tag "+cls;tag.textContent=k.term;
+        tag.style.fontSize=(0.72+ratio*0.2)+"rem";
         cloud.appendChild(tag);
       });
     }
-
-    const bg = await (await fetch(API+"/nlp/bigrams?top_n=12")).json();
-    if (bg.bigrams) {
+    const bg=await(await fetch(API+"/nlp/bigrams?top_n=12")).json();
+    if(bg.bigrams){
       destroyChart("bigrams");
-      const ctx = document.getElementById("chartBigrams").getContext("2d");
-      charts["bigrams"] = new Chart(ctx, {
+      const ctx=document.getElementById("chartBigrams").getContext("2d");
+      charts["bigrams"]=new Chart(ctx,{
         type:"bar",
-        data: {
-          labels: bg.bigrams.map(b=>b.term),
-          datasets:[{
-            label:"Frecuencia",
-            data: bg.bigrams.map(b=>b.count),
-            backgroundColor:"rgba(224,64,251,0.25)",
-            borderColor:"#e040fb", borderWidth:1, borderRadius:4, borderSkipped:false
-          }]
-        },
-        options:{ ...cDef, indexAxis:"y", plugins:{...cDef.plugins, legend:{display:false}},
-          scales:{...cDef.scales, x:{...cDef.scales.x, beginAtZero:true}}
-        }
+        data:{labels:bg.bigrams.map(b=>b.term),
+          datasets:[{label:"Frecuencia",data:bg.bigrams.map(b=>b.count),
+            backgroundColor:"rgba(124,58,237,0.45)",borderColor:"#7c3aed",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+        options:{...cDef,indexAxis:"y",plugins:{...cDef.plugins,legend:{display:false}},
+          scales:{...cDef.scales,x:{...cDef.scales.x,beginAtZero:true}}}
       });
     }
-  } catch(e) { console.error(e); }
+  }catch(e){console.error("NLP:",e)}
   hideLoading();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // CLUSTERING
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadClustering() {
-  const n = document.getElementById("clusterSelect").value;
+async function loadClustering(){
+  const n=document.getElementById("clusterSelect").value;
   showLoading("Ejecutando K-Means...");
-  try {
-    const d = await (await fetch(API+"/clustering/kmeans?n_clusters="+n)).json();
-    const canvas = document.getElementById("scatterCanvas");
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * dpr;
-    canvas.height = canvas.offsetHeight * dpr;
-    ctx.scale(dpr, dpr);
-    const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  try{
+    const d=await(await fetch(API+"/clustering/kmeans?n_clusters="+n)).json();
+    const canvas=document.getElementById("scatterCanvas");
+    const ctx=canvas.getContext("2d");
+    const dpr=window.devicePixelRatio||1;
+    canvas.width=canvas.offsetWidth*dpr;canvas.height=canvas.offsetHeight*dpr;
+    ctx.scale(dpr,dpr);
+    const W=canvas.offsetWidth,H=canvas.offsetHeight;
     ctx.clearRect(0,0,W,H);
 
-    if (d.scatter && d.scatter.length) {
-      const xs=d.scatter.map(p=>p.x), ys=d.scatter.map(p=>p.y);
-      const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
-      const pad=36;
-      const sX=(W-pad*2)/(maxX-minX||1), sY=(H-pad*2)/(maxY-minY||1);
+    if(d.scatter&&d.scatter.length){
+      const xs=d.scatter.map(p=>p.x),ys=d.scatter.map(p=>p.y);
+      const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+      const pad=36,sX=(W-pad*2)/(maxX-minX||1),sY=(H-pad*2)/(maxY-minY||1);
 
       // Grid
-      ctx.strokeStyle="rgba(255,255,255,0.04)"; ctx.lineWidth=1;
+      ctx.strokeStyle="#e2e8f0";ctx.lineWidth=1;
       for(let i=0;i<=5;i++){
-        const x=pad+(W-pad*2)*i/5, y=pad+(H-pad*2)*i/5;
-        ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,H-pad); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+        const x=pad+(W-pad*2)*i/5,y=pad+(H-pad*2)*i/5;
+        ctx.beginPath();ctx.moveTo(x,pad);ctx.lineTo(x,H-pad);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
       }
-
       // Points
-      d.scatter.forEach(p => {
-        const x=pad+(p.x-minX)*sX, y=H-pad-(p.y-minY)*sY;
-        const color = COLORS[p.cluster%COLORS.length];
-        ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
-        ctx.fillStyle=color+"22"; ctx.fill();
-        ctx.beginPath(); ctx.arc(x,y,2.8,0,Math.PI*2);
-        ctx.fillStyle=color+"cc"; ctx.fill();
+      d.scatter.forEach(p=>{
+        const x=pad+(p.x-minX)*sX,y=H-pad-(p.y-minY)*sY;
+        const color=COLORS[p.cluster%COLORS.length];
+        ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+        ctx.fillStyle=color+"bb";ctx.fill();
+        ctx.strokeStyle=color;ctx.lineWidth=1;ctx.stroke();
       });
-
       // Legend
       const unique=[...new Set(d.scatter.map(p=>p.cluster))].sort();
-      unique.forEach((c,i) => {
-        const lx=20+i*100;
-        ctx.beginPath(); ctx.arc(lx,16,4,0,Math.PI*2);
-        ctx.fillStyle=COLORS[c%COLORS.length]; ctx.fill();
-        ctx.fillStyle="#8b949e"; ctx.font="600 11px 'Exo 2', sans-serif";
-        ctx.fillText("Cluster "+c, lx+12, 20);
+      unique.forEach((c,i)=>{
+        const lx=16+i*95;
+        ctx.beginPath();ctx.arc(lx,14,5,0,Math.PI*2);
+        ctx.fillStyle=COLORS[c%COLORS.length];ctx.fill();
+        ctx.fillStyle="#475569";ctx.font="600 11px Inter, sans-serif";
+        ctx.fillText("Cluster "+c,lx+12,18);
       });
     }
-
     // Cluster cards
-    const cardsEl = document.getElementById("clusterCards");
-    cardsEl.innerHTML="";
-    if (d.clusters) {
-      d.clusters.forEach(cl => {
+    const cardsEl=document.getElementById("clusterCards");cardsEl.innerHTML="";
+    if(d.clusters){
+      d.clusters.forEach(cl=>{
         const color=COLORS[cl.cluster_id%COLORS.length];
-        const card=document.createElement("div");
-        card.className="cluster-card";
-        card.style.borderTop="2px solid "+color;
-        card.innerHTML=`
-          <div class="c-label">Cluster ${cl.cluster_id}</div>
-          <div class="c-size" style="color:${color}">${cl.size}</div>
-          <div class="c-terms">${cl.top_terms.slice(0,5).map(t=>`<span>${t.term}</span>`).join("")}</div>`;
+        const card=document.createElement("div");card.className="cluster-card";
+        card.style.borderTopColor=color;
+        card.innerHTML=`<div class="c-label">Cluster ${cl.cluster_id}</div><div class="c-size" style="color:${color}">${cl.size}</div><div class="c-terms">${cl.top_terms.slice(0,5).map(t=>`<span>${t.term}</span>`).join("")}</div>`;
         cardsEl.appendChild(card);
       });
     }
-  } catch(e) { console.error(e); }
+  }catch(e){console.error("Clustering:",e)}
   hideLoading();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // ML
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadML() {
+async function loadML(){
   showLoading("Entrenando modelo Random Forest...");
-  try {
-    const d = await (await fetch(API+"/ml/risk-profiles")).json();
-
-    if (d.accuracy!=null) {
+  try{
+    const d=await(await fetch(API+"/ml/risk-profiles")).json();
+    if(d.accuracy!=null){
       const badge=document.getElementById("mlAccBadge");
       badge.style.display="inline-flex";
       badge.textContent=`Precisión: ${(d.accuracy*100).toFixed(1)}%`;
     }
-
-    const container=document.getElementById("featBars");
-    container.innerHTML="";
-    if (d.feature_importance) {
+    const container=document.getElementById("featBars");container.innerHTML="";
+    if(d.feature_importance){
       const maxImp=Math.max(...d.feature_importance.map(f=>f.importance));
-      d.feature_importance.forEach(f => {
+      d.feature_importance.forEach(f=>{
         const pct=(f.importance/maxImp*100);
-        container.innerHTML+=`
-          <div class="feat-bar">
-            <div class="feat-label">${f.feature}</div>
-            <div class="feat-track"><div class="feat-fill" style="width:${pct}%"></div></div>
-            <div class="feat-val">${(f.importance*100).toFixed(1)}%</div>
-          </div>`;
+        container.innerHTML+=`<div class="feat-bar"><div class="feat-label">${f.feature}</div><div class="feat-track"><div class="feat-fill" style="width:${pct}%"></div></div><div class="feat-val">${(f.importance*100).toFixed(1)}%</div></div>`;
       });
     }
-
-    if (d.classification_report && d.classes) {
+    if(d.classification_report&&d.classes){
       destroyChart("riskClasses");
       const ctx=document.getElementById("chartRiskClasses").getContext("2d");
       const labels=d.classes.map(c=>String(c).substring(0,22));
@@ -999,48 +642,31 @@ async function loadML() {
       const recall=d.classes.map(c=>(d.classification_report[String(c)]?.recall||0)*100);
       charts["riskClasses"]=new Chart(ctx,{
         type:"bar",
-        data:{
-          labels,
-          datasets:[
-            {label:"Precisión", data:precision, backgroundColor:"rgba(0,229,255,0.3)", borderColor:"#00e5ff", borderWidth:1, borderRadius:4, borderSkipped:false},
-            {label:"Recall", data:recall, backgroundColor:"rgba(0,230,118,0.25)", borderColor:"#00e676", borderWidth:1, borderRadius:4, borderSkipped:false}
-          ]
-        },
-        options:{...cDef, scales:{...cDef.scales, y:{...cDef.scales.y, min:0, max:100, beginAtZero:true}}}
+        data:{labels,datasets:[
+          {label:"Precisión",data:precision,backgroundColor:"rgba(59,130,246,0.5)",borderColor:"#3b82f6",borderWidth:1,borderRadius:4,borderSkipped:false},
+          {label:"Recall",data:recall,backgroundColor:"rgba(13,148,136,0.45)",borderColor:"#0d9488",borderWidth:1,borderRadius:4,borderSkipped:false}
+        ]},
+        options:{...cDef,scales:{...cDef.scales,y:{...cDef.scales.y,min:0,max:100,beginAtZero:true}}}
       });
     }
-  } catch(e) { console.error(e); document.getElementById("featBars").innerHTML='<p style="color:#ff6b6b;font-size:0.8rem;padding:20px;">Error al cargar resultados del modelo.</p>'; }
+  }catch(e){console.error("ML:",e);document.getElementById("featBars").innerHTML='<p style="color:var(--red);font-size:0.8rem;padding:20px">Error: '+e.message+'</p>'}
   hideLoading();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // MITIGATION
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadMitigation() {
+async function loadMitigation(){
   showLoading("Generando estrategias de mitigación...");
-  try {
-    const d = await (await fetch(API+"/mitigation/strategies")).json();
-    const grid=document.getElementById("stratGrid");
-    grid.innerHTML="";
-    const numClasses=["sn-1","sn-2","sn-3","sn-4","sn-5","sn-6"];
-    if (d.strategies) {
-      d.strategies.forEach((s,i) => {
-        const evClass = s.evidence_strength==="High"?"ev-high":"ev-med";
-        grid.innerHTML+=`
-          <div class="strat-card">
-            <div class="strat-num ${numClasses[i%6]}">${s.priority}</div>
-            <div class="strat-content">
-              <h4>${s.title}</h4>
-              <p>${s.description}</p>
-              <div class="strat-meta">
-                <span>Categoría: ${s.category}</span>
-                <span class="${evClass}">Evidencia: ${s.evidence_strength==="High"?"Alta":"Media"}</span>
-              </div>
-            </div>
-          </div>`;
+  try{
+    const d=await(await fetch(API+"/mitigation/strategies")).json();
+    const grid=document.getElementById("stratGrid");grid.innerHTML="";
+    const numCls=["sn-1","sn-2","sn-3","sn-4","sn-5","sn-6"];
+    if(d.strategies){
+      d.strategies.forEach((s,i)=>{
+        const evCls=s.evidence_strength==="Alta"?"ev-alta":"ev-media";
+        grid.innerHTML+=`<div class="strat-card"><div class="strat-num ${numCls[i%6]}">${s.priority}</div><div class="strat-content"><h4>${s.title}</h4><p>${s.description}</p><div class="strat-meta"><span>Categoría: ${s.category}</span><span class="${evCls}">Evidencia: ${s.evidence_strength}</span></div></div></div>`;
       });
     }
-  } catch(e) { console.error(e); }
+  }catch(e){console.error("Mitigation:",e)}
   hideLoading();
 }
 </script>
