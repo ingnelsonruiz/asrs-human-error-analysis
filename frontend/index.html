@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASRS — Human Error Pattern Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── RESET & VARIABLES ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep:      #0a0e1a;
+  --bg-card:      #111827;
+  --bg-card-alt:  #141e33;
+  --border:       #1e2d4d;
+  --text-primary: #e8ecf4;
+  --text-muted:   #6b7a99;
+  --accent:       #4f86f7;
+  --accent-glow:  rgba(79,134,247,0.25);
+  --accent2:      #00d4aa;
+  --accent3:      #f06f4a;
+  --accent4:      #a86bfc;
+  --accent5:      #f4c542;
+  --red:          #ef4444;
+  --green:        #22c55e;
+  --radius:       12px;
+  --shadow:       0 4px 32px rgba(0,0,0,0.4);
+}
+
+html { font-size: 16px; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ─── BACKGROUND TEXTURE ────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(79,134,247,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(168,107,252,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,212,170,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── HEADER / NAV ──────────────────────────────────────────────────────── */
+.header {
+  position: relative; z-index: 100;
+  background: rgba(17,24,39,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent4));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.logo-text { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-primary); }
+.logo-sub { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  padding: 6px 16px; border-radius: 6px; border: none;
+  background: transparent; color: var(--text-muted);
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  letter-spacing: 0.5px; transition: all 0.2s;
+}
+.nav-tab:hover { color: var(--text-primary); background: rgba(79,134,247,0.1); }
+.nav-tab.active { color: var(--accent); background: rgba(79,134,247,0.15); }
+
+.header-status {
+  font-size: 0.75rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+/* ─── MAIN LAYOUT ───────────────────────────────────────────────────────── */
+.main { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px 2rem; }
+.section { display: none; }
+.section.active { display: block; animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── UPLOAD ZONE ───────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 64px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: var(--bg-card);
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(79,134,247,0.05);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+.upload-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.6; }
+.upload-zone h3 { font-size: 1.1rem; color: var(--text-primary); margin-bottom: 6px; }
+.upload-zone p { font-size: 0.82rem; color: var(--text-muted); }
+.upload-zone input[type=file] { display: none; }
+.upload-result { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: 0.82rem; display: none; }
+.upload-result.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--green); display: block; }
+.upload-result.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--red); display: block; }
+
+/* ─── CARDS GRID ────────────────────────────────────────────────────────── */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  position: relative; overflow: hidden; transition: transform 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.stat-card:nth-child(1)::before { background: var(--accent); }
+.stat-card:nth-child(2)::before { background: var(--accent2); }
+.stat-card:nth-child(3)::before { background: var(--accent3); }
+.stat-card:nth-child(4)::before { background: var(--accent4); }
+.stat-card:nth-child(5)::before { background: var(--accent5); }
+.stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+/* ─── CHART PANELS ──────────────────────────────────────────────────────── */
+.panel-grid { display: grid; gap: 20px; }
+.panel-grid.two-col { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .panel-grid.two-col { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow);
+}
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.panel-header h3 { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); text-transform: uppercase; letter-spacing: 1px; }
+.panel-header .badge {
+  font-size: 0.65rem; padding: 3px 10px; border-radius: 20px;
+  background: rgba(79,134,247,0.15); color: var(--accent); font-weight: 600; letter-spacing: 0.5px;
+}
+
+.chart-wrap { position: relative; width: 100%; height: 280px; }
+.chart-wrap canvas { max-height: 100%; }
+
+/* Select style */
+.styled-select {
+  background: var(--bg-card-alt); border: 1px solid var(--border);
+  color: var(--text-primary); padding: 6px 12px; border-radius: 6px;
+  font-size: 0.78rem; cursor: pointer; outline: none;
+}
+.styled-select:focus { border-color: var(--accent); }
+
+/* ─── KEYWORD CLOUD ─────────────────────────────────────────────────────── */
+.keyword-cloud { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+.kw-tag {
+  padding: 5px 14px; border-radius: 20px; font-size: 0.76rem; font-weight: 600;
+  background: rgba(79,134,247,0.1); border: 1px solid rgba(79,134,247,0.2); color: var(--accent);
+  transition: all 0.2s; cursor: default;
+}
+.kw-tag:hover { background: rgba(79,134,247,0.2); transform: scale(1.05); }
+.kw-tag.high { background: rgba(79,134,247,0.2); border-color: var(--accent); color: var(--accent); }
+.kw-tag.med { background: rgba(168,107,252,0.15); border-color: var(--accent4); color: var(--accent4); }
+.kw-tag.low { background: rgba(107,122,153,0.15); border-color: var(--text-muted); color: var(--text-muted); }
+
+/* ─── SCATTER PLOT ──────────────────────────────────────────────────────── */
+.scatter-canvas { width: 100%; height: 320px; border-radius: 8px; background: var(--bg-card-alt); }
+
+/* ─── CLUSTER CARDS ─────────────────────────────────────────────────────── */
+.cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.cluster-card {
+  background: var(--bg-card-alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.cluster-card .cluster-id { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.cluster-card .cluster-size { font-size: 1.4rem; font-weight: 700; margin: 4px 0; }
+.cluster-card .cluster-terms { font-size: 0.72rem; color: var(--text-muted); line-height: 1.8; }
+.cluster-card .cluster-terms span { display: inline-block; margin-right: 6px; }
+
+/* ─── ML RESULTS ────────────────────────────────────────────────────────── */
+.feat-bar-wrap { margin-top: 8px; }
+.feat-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.feat-bar-label { font-size: 0.75rem; color: var(--text-primary); width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feat-bar-track { flex: 1; height: 6px; background: var(--bg-card-alt); border-radius: 3px; overflow: hidden; }
+.feat-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent4)); transition: width 0.8s ease; }
+.feat-bar-val { font-size: 0.7rem; color: var(--text-muted); width: 46px; text-align: right; }
+
+.accuracy-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--green); font-weight: 600;
+}
+
+/* ─── MITIGATION STRATEGIES ─────────────────────────────────────────────── */
+.strat-grid { display: grid; gap: 14px; }
+.strat-card {
+  background: var(--bg-card-alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px; display: flex; gap: 18px;
+  transition: border-color 0.2s;
+}
+.strat-card:hover { border-color: var(--accent); }
+.strat-num {
+  min-width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+}
+.strat-num.p1 { background: rgba(239,68,68,0.15); color: var(--red); }
+.strat-num.p2 { background: rgba(240,111,74,0.15); color: var(--accent3); }
+.strat-num.p3 { background: rgba(244,197,66,0.15); color: var(--accent5); }
+.strat-num.p4 { background: rgba(79,134,247,0.15); color: var(--accent); }
+.strat-num.p5 { background: rgba(168,107,252,0.15); color: var(--accent4); }
+.strat-num.p6 { background: rgba(0,212,170,0.15); color: var(--accent2); }
+
+.strat-content h4 { font-size: 0.88rem; color: var(--text-primary); margin-bottom: 4px; }
+.strat-content p { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
+.strat-meta { margin-top: 8px; display: flex; gap: 12px; }
+.strat-meta span { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.strat-meta .ev-high { color: var(--green); }
+.strat-meta .ev-med { color: var(--accent5); }
+
+/* ─── LOADING SPINNER ───────────────────────────────────────────────────── */
+.spinner-wrap { text-align: center; padding: 40px; }
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-text { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ─── LOADING OVERLAY (for API calls) ───────────────────────────────────── */
+.loading-overlay {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(10,14,26,0.7); backdrop-filter: blur(4px);
+  justify-content: center; align-items: center;
+}
+.loading-overlay.show { display: flex; }
+.loading-overlay .spinner { width: 44px; height: 44px; border-width: 4px; }
+.loading-overlay .spinner-text { color: var(--text-primary); font-size: 0.85rem; margin-top: 12px; }
+
+/* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── SECTION TITLE ─────────────────────────────────────────────────────── */
+.section-title { margin-bottom: 24px; }
+.section-title h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.section-title p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+</style>
+</head>
+<body>
+
+<!-- ─── LOADING OVERLAY ──────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div>
+    <div class="spinner"></div>
+    <div class="spinner-text" id="loadingText">Procesando...</div>
+  </div>
+</div>
+
+<!-- ─── HEADER ────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">✈</div>
+    <div>
+      <div class="logo-text">ASRS Analysis</div>
+      <div class="logo-sub">Human Error Pattern Detection</div>
+    </div>
+  </div>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('upload')">Upload</button>
+    <button class="nav-tab" onclick="switchTab('eda')">EDA</button>
+    <button class="nav-tab" onclick="switchTab('nlp')">NLP</button>
+    <button class="nav-tab" onclick="switchTab('clustering')">Clustering</button>
+    <button class="nav-tab" onclick="switchTab('ml')">ML Risk</button>
+    <button class="nav-tab" onclick="switchTab('mitigation')">Mitigation</button>
+  </nav>
+
+  <div class="header-status">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Disconnected</span>
+  </div>
+</header>
+
+<!-- ─── MAIN ──────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- ═══ UPLOAD ══════════════════════════════════════════════════════════ -->
+  <div class="section active" id="sec-upload">
+    <div class="section-title">
+      <h2>Dataset Upload</h2>
+      <p>Upload your ASRS_DBOnline.csv to initialize the analysis engine</p>
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📂</div>
+      <h3>Drop your CSV file here</h3>
+      <p>or click to browse — Expected: ASRS_DBOnline.csv</p>
+      <input type="file" id="fileInput" accept=".csv" onchange="uploadFile(event)" />
+    </div>
+    <div class="upload-result" id="uploadResult"></div>
+  </div>
+
+  <!-- ═══ EDA ═════════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-eda">
+    <div class="section-title">
+      <h2>Exploratory Data Analysis</h2>
+      <p>Distribution, timeline, and variable characterization</p>
+    </div>
+    <div class="cards-grid" id="edaCards">
+      <div class="stat-card"><div class="stat-label">Total Incidents</div><div class="stat-value" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">Variables</div><div class="stat-value" id="statCols">—</div></div>
+      <div class="stat-card"><div class="stat-label">Date Range</div><div class="stat-value" id="statRange" style="font-size:1rem">—</div></div>
+      <div class="stat-card"><div class="stat-label">Top Category</div><div class="stat-value" id="statTop" style="font-size:0.95rem">—</div></div>
+    </div>
+
+    <div class="panel-grid two-col">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Distribution</h3>
+          <select class="styled-select" id="distSelect" onchange="loadDistribution()"></select>
+        </div>
+        <div class="chart-wrap"><canvas id="chartDist"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Timeline</h3>
+          <span class="badge">Incidents / Month</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NLP ═════════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-nlp">
+    <div class="section-title">
+      <h2>Natural Language Processing</h2>
+      <p>TF-IDF keyword extraction and bigram analysis from incident narratives</p>
+    </div>
+    <div class="panel-grid two-col">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Top Keywords (TF-IDF)</h3>
+          <span class="badge">Auto-detected</span>
+        </div>
+        <div class="keyword-cloud" id="keywordCloud">
+          <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Analyzing text...</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Top Bigrams</h3>
+          <span class="badge">Word Pairs</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartBigrams"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CLUSTERING ═════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-clustering">
+    <div class="section-title">
+      <h2>Unsupervised Clustering</h2>
+      <p>K-Means on TF-IDF vectors — identifying latent human error patterns</p>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Cluster Scatter (PCA 2D)</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="font-size:0.75rem;color:var(--text-muted);">Clusters:</label>
+          <select class="styled-select" id="clusterSelect" onchange="loadClustering()">
+            <option value="3">3</option><option value="4">4</option>
+            <option value="5" selected>5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option>
+          </select>
+        </div>
+      </div>
+      <canvas class="scatter-canvas" id="scatterCanvas"></canvas>
+      <div class="cluster-grid" id="clusterCards"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ML RISK ═════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-ml">
+    <div class="section-title">
+      <h2>ML Risk Segmentation</h2>
+      <p>Random Forest classification — operative risk profile identification</p>
+    </div>
+    <div class="panel-grid two-col">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Feature Importance</h3>
+          <span class="badge" id="mlAccBadge" style="display:none;"></span>
+        </div>
+        <div class="feat-bar-wrap" id="featBars">
+          <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Training model...</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Risk Classes</h3>
+          <span class="badge">RF Classifier</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartRiskClasses"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MITIGATION ═════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-mitigation">
+    <div class="section-title">
+      <h2>Mitigation Strategies</h2>
+      <p>Evidence-based recommendations derived from identified patterns and risk profiles</p>
+    </div>
+    <div class="strat-grid" id="stratGrid">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Generating strategies...</div></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── SCRIPTS ───────────────────────────────────────────────────────── -->
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+// CONFIG — Change this URL to your Render backend
+// ══════════════════════════════════════════════════════════════════════════
+const API = "http://localhost:8000";  // ← Replace with your Render URL after deploy
+
+// ══════════════════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ══════════════════════════════════════════════════════════════════════════
+let charts = {};
+const CLUSTER_COLORS = ["#4f86f7","#00d4aa","#f06f4a","#a86bfc","#f4c542","#ef4444","#3dd68c","#f78da7"];
+
+// ══════════════════════════════════════════════════════════════════════════
+// LOADING OVERLAY
+// ══════════════════════════════════════════════════════════════════════════
+function showLoading(msg = "Procesando...") {
+  document.getElementById("loadingText").textContent = msg;
+  document.getElementById("loadingOverlay").classList.add("show");
+}
+function hideLoading() {
+  document.getElementById("loadingOverlay").classList.remove("show");
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// HEALTH CHECK
+// ══════════════════════════════════════════════════════════════════════════
+async function checkHealth() {
+  try {
+    const r = await fetch(API + "/health");
+    const d = await r.json();
+    document.getElementById("statusDot").className = "status-dot online";
+    document.getElementById("statusText").textContent = d.loaded ? `Connected · ${d.rows} rows` : "Connected · No data";
+  } catch(e) {
+    document.getElementById("statusDot").className = "status-dot";
+    document.getElementById("statusText").textContent = "Disconnected";
+  }
+}
+setInterval(checkHealth, 5000);
+checkHealth();
+
+// ══════════════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("sec-" + tab).classList.add("active");
+  event.target.classList.add("active");
+
+  // Lazy load on first visit
+  if (tab === "eda" && !switchTab._edaLoaded) { switchTab._edaLoaded = true; loadEDA(); }
+  if (tab === "nlp" && !switchTab._nlpLoaded) { switchTab._nlpLoaded = true; loadNLP(); }
+  if (tab === "clustering" && !switchTab._clusterLoaded) { switchTab._clusterLoaded = true; loadClustering(); }
+  if (tab === "ml" && !switchTab._mlLoaded) { switchTab._mlLoaded = true; loadML(); }
+  if (tab === "mitigation" && !switchTab._mitLoaded) { switchTab._mitLoaded = true; loadMitigation(); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════════════════════════════════════
+const uploadZone = document.getElementById("uploadZone");
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("dragover"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+uploadZone.addEventListener("drop", e => { e.preventDefault(); uploadZone.classList.remove("dragover"); if(e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]); });
+
+function uploadFile(e) { if(e.target.files[0]) doUpload(e.target.files[0]); }
+
+async function doUpload(file) {
+  showLoading("Uploading " + file.name + "...");
+  const res = document.getElementById("uploadResult");
+  res.className = "upload-result";
+  try {
+    const fd = new FormData(); fd.append("file", file);
+    const r = await fetch(API + "/upload", { method: "POST", body: fd });
+    const d = await r.json();
+    if (r.ok) {
+      res.className = "upload-result success";
+      res.innerHTML = `✔ <strong>${d.rows} records</strong> loaded with <strong>${d.columns.length} columns</strong>.<br><small>Columns: ${d.columns.join(", ")}</small>`;
+      checkHealth();
+    } else {
+      res.className = "upload-result error";
+      res.textContent = "✘ " + (d.detail || "Upload failed.");
+    }
+  } catch(e) {
+    res.className = "upload-result error";
+    res.textContent = "✘ Connection error. Is the API running?";
+  }
+  hideLoading();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CHART HELPERS
+// ══════════════════════════════════════════════════════════════════════════
+function destroyChart(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: "#6b7a99", font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: "#6b7a99", font: { size: 10 } }, grid: { color: "rgba(30,45,77,0.4)" } },
+    y: { ticks: { color: "#6b7a99", font: { size: 10 } }, grid: { color: "rgba(30,45,77,0.4)" } }
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// EDA
+// ══════════════════════════════════════════════════════════════════════════
+async function loadEDA() {
+  showLoading("Loading EDA...");
+  try {
+    // Overview
+    const ov = await (await fetch(API + "/dashboard/overview")).json();
+    document.getElementById("statTotal").textContent = ov.total_incidents.toLocaleString();
+    document.getElementById("statCols").textContent = ov.total_columns;
+    if (ov.date_range) document.getElementById("statRange").textContent = ov.date_range.from + " → " + ov.date_range.to;
+    if (ov.top_type) { const [k] = Object.keys(ov.top_type); document.getElementById("statTop").textContent = k; }
+
+    // Columns dropdown
+    const cols = await (await fetch(API + "/eda/columns")).json();
+    const sel = document.getElementById("distSelect");
+    sel.innerHTML = "";
+    cols.columns.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = c; sel.appendChild(o); });
+    loadDistribution();
+
+    // Timeline
+    const tl = await (await fetch(API + "/eda/timeline")).json();
+    if (tl.data && tl.data.length) {
+      destroyChart("timeline");
+      const ctx = document.getElementById("chartTimeline").getContext("2d");
+      charts["timeline"] = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: tl.data.map(d => d.period),
+          datasets: [{ label: "Incidents", data: tl.data.map(d => d.count), borderColor: "#4f86f7", backgroundColor: "rgba(79,134,247,0.08)", fill: true, tension: 0.3, pointRadius: 2, pointHoverRadius: 5 }]
+        },
+        options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      });
+    }
+  } catch(e) { console.error("EDA error:", e); }
+  hideLoading();
+}
+
+async function loadDistribution() {
+  const col = document.getElementById("distSelect").value;
+  if (!col) return;
+  showLoading("Loading distribution...");
+  try {
+    const d = await (await fetch(API + "/eda/distribution/" + encodeURIComponent(col))).json();
+    destroyChart("dist");
+    const ctx = document.getElementById("chartDist").getContext("2d");
+    const colors = d.data.map((_, i) => CLUSTER_COLORS[i % CLUSTER_COLORS.length]);
+    charts["dist"] = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: d.data.map(x => x.label.substring(0, 22)),
+        datasets: [{ label: col, data: d.data.map(x => x.value), backgroundColor: colors, borderRadius: 4 }]
+      },
+      options: { ...chartDefaults, indexAxis: "y", plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+    });
+  } catch(e) { console.error("Dist error:", e); }
+  hideLoading();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// NLP
+// ══════════════════════════════════════════════════════════════════════════
+async function loadNLP() {
+  showLoading("Analyzing text with NLP...");
+  try {
+    // Keywords
+    const kw = await (await fetch(API + "/nlp/top-keywords?top_n=28")).json();
+    const cloud = document.getElementById("keywordCloud");
+    cloud.innerHTML = "";
+    if (kw.keywords) {
+      const maxScore = Math.max(...kw.keywords.map(k => k.score));
+      kw.keywords.forEach(k => {
+        const ratio = k.score / maxScore;
+        const cls = ratio > 0.7 ? "high" : ratio > 0.4 ? "med" : "low";
+        const tag = document.createElement("span");
+        tag.className = "kw-tag " + cls;
+        tag.textContent = k.term;
+        tag.style.fontSize = (0.68 + ratio * 0.28) + "rem";
+        cloud.appendChild(tag);
+      });
+    }
+
+    // Bigrams
+    const bg = await (await fetch(API + "/nlp/bigrams?top_n=12")).json();
+    if (bg.bigrams) {
+      destroyChart("bigrams");
+      const ctx = document.getElementById("chartBigrams").getContext("2d");
+      charts["bigrams"] = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: bg.bigrams.map(b => b.term),
+          datasets: [{ label: "Count", data: bg.bigrams.map(b => b.count), backgroundColor: "rgba(168,107,252,0.6)", borderColor: "#a86bfc", borderWidth: 1, borderRadius: 4 }]
+        },
+        options: { ...chartDefaults, indexAxis: "y", plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      });
+    }
+  } catch(e) { console.error("NLP error:", e); }
+  hideLoading();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CLUSTERING
+// ══════════════════════════════════════════════════════════════════════════
+async function loadClustering() {
+  const n = document.getElementById("clusterSelect").value;
+  showLoading("Running K-Means clustering...");
+  try {
+    const d = await (await fetch(API + "/clustering/kmeans?n_clusters=" + n)).json();
+
+    // Scatter plot (manual canvas draw)
+    const canvas = document.getElementById("scatterCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const W = canvas.offsetWidth, H = canvas.offsetHeight;
+    ctx.clearRect(0, 0, W, H);
+
+    if (d.scatter && d.scatter.length) {
+      const xs = d.scatter.map(p => p.x), ys = d.scatter.map(p => p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const pad = 30;
+      const scaleX = (W - pad*2) / (maxX - minX || 1);
+      const scaleY = (H - pad*2) / (maxY - minY || 1);
+
+      // Grid
+      ctx.strokeStyle = "rgba(30,45,77,0.3)"; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const x = pad + (W - pad*2) * i/4, y = pad + (H - pad*2) * i/4;
+        ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+      }
+
+      // Points
+      d.scatter.forEach(p => {
+        const x = pad + (p.x - minX) * scaleX;
+        const y = H - pad - (p.y - minY) * scaleY;
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, Math.PI*2);
+        ctx.fillStyle = CLUSTER_COLORS[p.cluster % CLUSTER_COLORS.length] + "bb";
+        ctx.fill();
+      });
+
+      // Legend
+      const uniqueClusters = [...new Set(d.scatter.map(p => p.cluster))].sort();
+      uniqueClusters.forEach((c, i) => {
+        const lx = 16 + i * 90;
+        ctx.beginPath(); ctx.arc(lx, 14, 5, 0, Math.PI*2);
+        ctx.fillStyle = CLUSTER_COLORS[c % CLUSTER_COLORS.length];
+        ctx.fill();
+        ctx.fillStyle = "#6b7a99"; ctx.font = "11px sans-serif";
+        ctx.fillText("Cluster " + c, lx + 10, 18);
+      });
+    }
+
+    // Cluster cards
+    const cardsEl = document.getElementById("clusterCards");
+    cardsEl.innerHTML = "";
+    if (d.clusters) {
+      d.clusters.forEach(cl => {
+        const card = document.createElement("div");
+        card.className = "cluster-card";
+        card.style.borderTop = "3px solid " + CLUSTER_COLORS[cl.cluster_id % CLUSTER_COLORS.length];
+        card.innerHTML = `
+          <div class="cluster-id">Cluster ${cl.cluster_id}</div>
+          <div class="cluster-size" style="color:${CLUSTER_COLORS[cl.cluster_id % CLUSTER_COLORS.length]}">${cl.size}</div>
+          <div class="cluster-terms">${cl.top_terms.slice(0,5).map(t => `<span>${t.term}</span>`).join("")}</div>
+        `;
+        cardsEl.appendChild(card);
+      });
+    }
+  } catch(e) { console.error("Clustering error:", e); }
+  hideLoading();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ML
+// ══════════════════════════════════════════════════════════════════════════
+async function loadML() {
+  showLoading("Training Random Forest model...");
+  try {
+    const d = await (await fetch(API + "/ml/risk-profiles")).json();
+
+    // Accuracy badge
+    if (d.accuracy != null) {
+      const badge = document.getElementById("mlAccBadge");
+      badge.style.display = "inline-flex";
+      badge.textContent = `Accuracy: ${(d.accuracy * 100).toFixed(1)}%`;
+    }
+
+    // Feature importance bars
+    const container = document.getElementById("featBars");
+    container.innerHTML = "";
+    if (d.feature_importance) {
+      const maxImp = Math.max(...d.feature_importance.map(f => f.importance));
+      d.feature_importance.forEach(f => {
+        const pct = (f.importance / maxImp * 100);
+        container.innerHTML += `
+          <div class="feat-bar">
+            <div class="feat-bar-label">${f.feature}</div>
+            <div class="feat-bar-track"><div class="feat-bar-fill" style="width:${pct}%"></div></div>
+            <div class="feat-bar-val">${(f.importance*100).toFixed(1)}%</div>
+          </div>`;
+      });
+    }
+
+    // Risk class chart (from classification report)
+    if (d.classification_report && d.classes) {
+      destroyChart("riskClasses");
+      const ctx = document.getElementById("chartRiskClasses").getContext("2d");
+      const labels = d.classes.map(c => String(c).substring(0, 20));
+      const precision = d.classes.map(c => (d.classification_report[String(c)]?.precision || 0) * 100);
+      const recall = d.classes.map(c => (d.classification_report[String(c)]?.recall || 0) * 100);
+      charts["riskClasses"] = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Precision", data: precision, backgroundColor: "rgba(79,134,247,0.6)", borderRadius: 3 },
+            { label: "Recall", data: recall, backgroundColor: "rgba(0,212,170,0.5)", borderRadius: 3 }
+          ]
+        },
+        options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 100 } } }
+      });
+    }
+  } catch(e) { console.error("ML error:", e); document.getElementById("featBars").innerHTML = '<p style="color:var(--red);font-size:0.8rem;">Error loading ML results</p>'; }
+  hideLoading();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MITIGATION
+// ══════════════════════════════════════════════════════════════════════════
+async function loadMitigation() {
+  showLoading("Generating mitigation strategies...");
+  try {
+    const d = await (await fetch(API + "/mitigation/strategies")).json();
+    const grid = document.getElementById("stratGrid");
+    grid.innerHTML = "";
+    if (d.strategies) {
+      d.strategies.forEach(s => {
+        const evClass = s.evidence_strength === "High" ? "ev-high" : "ev-med";
+        grid.innerHTML += `
+          <div class="strat-card">
+            <div class="strat-num p${Math.min(s.priority, 6)}">${s.priority}</div>
+            <div class="strat-content">
+              <h4>${s.title}</h4>
+              <p>${s.description}</p>
+              <div class="strat-meta">
+                <span>Category: ${s.category}</span>
+                <span class="${evClass}">Evidence: ${s.evidence_strength}</span>
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+  } catch(e) { console.error("Mitigation error:", e); }
+  hideLoading();
+}
+</script>
+
+</body>
+</html>
