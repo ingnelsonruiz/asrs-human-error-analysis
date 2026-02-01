@@ -123,21 +123,25 @@ def dashboard_overview():
         top = df[tc].value_counts().head(3)
         overview["top_type"] = {"column": tc, "data": {str(k): int(v) for k, v in top.items()}}
 
-    # Timeline: try numeric time columns as year or just count rows
-    time_cols = [c for c in df.columns if "time" in c]
-    if time_cols:
-        tc = time_cols[0]
+    # Date range: look for 'date' column with YYYYMM format (e.g. 201601 = Jan 2016)
+    date_col = next((c for c in df.columns if c == "date"), None)
+    if date_col is None:
+        date_col = next((c for c in df.columns if "date" in c), None)
+    if date_col:
         try:
-            # If values look like years (e.g. 2007)
-            sample = df[tc].dropna()
+            sample = df[date_col].dropna()
             if sample.dtype in ["int64","float64"]:
                 vals = sample.astype(int)
-                if vals.min() > 1900 and vals.max() < 2100:
-                    overview["date_range"] = {"from": str(vals.min()), "to": str(vals.max())}
-            else:
-                dates = pd.to_datetime(df[tc], errors="coerce").dropna()
-                if not dates.empty:
-                    overview["date_range"] = {"from": str(dates.min().date()), "to": str(dates.max().date())}
+                # YYYYMM format: 6 digits, between 200001 and 203012
+                if vals.min() > 200001 and vals.max() < 203012:
+                    year_min = vals.min() // 100
+                    month_min = vals.min() % 100
+                    year_max = vals.max() // 100
+                    month_max = vals.max() % 100
+                    overview["date_range"] = {
+                        "from": f"{year_min}-{month_min:02d}",
+                        "to": f"{year_max}-{month_max:02d}"
+                    }
         except Exception:
             pass
 
@@ -171,32 +175,35 @@ def eda_distribution(column: str, top_n: int = 15):
 @app.get("/eda/timeline")
 def eda_timeline():
     """
-    Build a timeline. Strategy:
-    1. If there's a numeric 'time' col with year-like values → group by year
-    2. If there's a parseable date col → group by month
-    3. Fallback: group by first available categorical
+    Timeline from 'date' column which has YYYYMM format (e.g. 201601 = Jan 2016).
+    Parses into proper year-month labels and groups by month.
     """
     df = _get_df()
 
-    # Strategy 1: numeric time as year
-    time_cols = [c for c in df.columns if "time" in c]
-    for tc in time_cols:
-        try:
-            sample = df[tc].dropna()
-            if sample.dtype in ["int64","float64"]:
-                vals = sample.astype(int)
-                if vals.min() > 1900 and vals.max() < 2100:
-                    counts = df[tc].astype(int).value_counts().sort_index()
-                    return {
-                        "column_used": tc,
-                        "type": "yearly",
-                        "data": [{"period": str(k), "count": int(v)} for k, v in counts.items()]
-                    }
-        except Exception:
-            continue
+    # Find the 'date' column (ASRS uses YYYYMM numeric format)
+    date_col = next((c for c in df.columns if c == "date"), None)
+    if date_col is None:
+        date_col = next((c for c in df.columns if "date" in c), None)
 
-    # Strategy 2: parse as date
-    date_candidates = [c for c in df.columns if any(k in c for k in ["date","time"])]
+    if date_col and df[date_col].dtype in ["int64", "float64"]:
+        try:
+            vals = df[date_col].dropna().astype(int)
+            # Confirm YYYYMM format (6-digit, range 200001–203012)
+            if vals.min() > 200001 and vals.max() < 203012:
+                # Convert YYYYMM → "YYYY-MM" string
+                df["_date_label"] = vals.apply(lambda v: f"{v // 100}-{v % 100:02d}")
+                counts = df["_date_label"].value_counts().sort_index()
+                df.drop(columns=["_date_label"], inplace=True, errors="ignore")
+                return {
+                    "column_used": date_col,
+                    "type": "monthly",
+                    "data": [{"period": str(k), "count": int(v)} for k, v in counts.items()]
+                }
+        except Exception:
+            pass
+
+    # Fallback: try parsing any date/time column
+    date_candidates = [c for c in df.columns if any(k in c for k in ["date", "time"])]
     for dc in date_candidates:
         try:
             parsed = pd.to_datetime(df[dc], errors="coerce")
@@ -213,7 +220,7 @@ def eda_timeline():
         except Exception:
             continue
 
-    # Strategy 3: fallback — use first good categorical
+    # Last fallback: first categorical
     obj_cols = _get_object_columns(df)
     if obj_cols:
         fc = obj_cols[0]
