@@ -82,15 +82,49 @@ async def upload_csv(file: UploadFile = File(...)):
     global _df
     try:
         content = await file.read()
+        raw_df = None
         for enc in ["utf-8", "latin-1", "cp1252"]:
             try:
-                _df = pd.read_csv(io.StringIO(content.decode(enc)))
+                raw_df = pd.read_csv(io.StringIO(content.decode(enc)), header=None)
                 break
             except Exception:
                 continue
-        if _df is None:
+        if raw_df is None:
             raise HTTPException(status_code=400, detail="No se pudo decodificar el CSV.")
+
+        # Detectar multi-header ASRS:
+        # Fila 0 = grupo general (Time, Time, Place, Place...)
+        # Fila 1 = sub-nombres reales (ACN, Date, Local Time Of Day...)
+        # Fila 2+ = datos reales
+        # Si la fila 1 tiene mayoria de strings descriptivos, es sub-header
+        row1 = raw_df.iloc[1].astype(str)
+        looks_like_subheader = row1.str.match(r"^[A-Za-z]").mean() > 0.4
+
+        if looks_like_subheader:
+            # Usar fila 1 como nombres de columna, datos desde fila 2
+            _df = raw_df.iloc[2:].copy()
+            _df.columns = raw_df.iloc[1].astype(str).str.strip()
+            _df = _df.reset_index(drop=True)
+        else:
+            # CSV normal con una sola fila de header
+            _df = raw_df.iloc[1:].copy()
+            _df.columns = raw_df.iloc[0].astype(str).str.strip()
+            _df = _df.reset_index(drop=True)
+
+        # Normalizar nombres: lowercase, espacios a guión bajo
         _df.columns = _df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+        # Convertir columnas numéricas que quedaron como string
+        for col in _df.columns:
+            try:
+                _df[col] = pd.to_numeric(_df[col])
+            except (ValueError, TypeError):
+                pass
+
+        # Eliminar columna unnamed si existe (índice original del CSV)
+        unnamed_cols = [c for c in _df.columns if "unnamed" in c]
+        _df.drop(columns=unnamed_cols, inplace=True, errors="ignore")
+
         return {"status": "success", "rows": len(_df), "columns": list(_df.columns),
                 "message": f"Dataset cargado: {len(_df)} registros, {len(_df.columns)} columnas."}
     except HTTPException: raise
@@ -123,10 +157,11 @@ def dashboard_overview():
         top = df[tc].value_counts().head(3)
         overview["top_type"] = {"column": tc, "data": {str(k): int(v) for k, v in top.items()}}
 
-    # Date range: look for 'date' column with YYYYMM format (e.g. 201601 = Jan 2016)
-    date_col = next((c for c in df.columns if c == "date"), None)
+    # Date range: YYYYMM values (ej: 201601) viven en la columna 'time'
+    # pandas lee el header agrupado 'Time' y lo convierte en 'time'
+    date_col = next((c for c in df.columns if c == "time"), None)
     if date_col is None:
-        date_col = next((c for c in df.columns if "date" in c), None)
+        date_col = next((c for c in df.columns if "date" in c or "time" in c), None)
     if date_col:
         try:
             sample = df[date_col].dropna()
@@ -153,11 +188,22 @@ def dashboard_overview():
 # ═══════════════════════════════════════════════════════════════════════════════
 @app.get("/eda/columns")
 def eda_columns():
-    """Return ONLY object/categorical columns for the distribution dropdown."""
+    """Return ONLY object/categorical columns for the distribution dropdown.
+       Also exclude columns that contain numeric-like data (time codes, IDs)."""
     df = _get_df()
     cols = _get_object_columns(df)
-    # Filter out columns with too many unique values (likely IDs)
-    filtered = [c for c in cols if df[c].nunique() < 500]
+    # Exclude columns with too many unique values (likely IDs) or too few (boring)
+    filtered = []
+    for c in cols:
+        nunique = df[c].nunique()
+        if nunique < 3 or nunique > 500:
+            continue
+        # Skip columns whose values look like numbers (time codes like 201601, franja horaria)
+        sample = df[c].dropna().head(20).astype(str)
+        numeric_ratio = sample.str.match(r"^\d+$").mean()
+        if numeric_ratio > 0.5:
+            continue
+        filtered.append(c)
     return {"columns": filtered if filtered else cols}
 
 @app.get("/eda/distribution/{column}")
@@ -180,10 +226,10 @@ def eda_timeline():
     """
     df = _get_df()
 
-    # Find the 'date' column (ASRS uses YYYYMM numeric format)
-    date_col = next((c for c in df.columns if c == "date"), None)
+    # Find the column with YYYYMM dates — in this CSV pandas names it 'time'
+    date_col = next((c for c in df.columns if c == "time"), None)
     if date_col is None:
-        date_col = next((c for c in df.columns if "date" in c), None)
+        date_col = next((c for c in df.columns if "date" in c or "time" in c), None)
 
     if date_col and df[date_col].dtype in ["int64", "float64"]:
         try:
@@ -374,8 +420,11 @@ def ml_risk_profiles(target_column: Optional[str] = None):
     le_target = LabelEncoder()
     y = le_target.fit_transform(df_clean[target_col].astype(str))
 
-    # Features: use OTHER object columns + numeric columns
+    # FILTRO CLAVE: eliminar columnas con >90% NaN antes de usar como features
+    # En ASRS la mayoría de columnas (aircraft_2, person_2, component, etc) están casi vacías
     feature_cols = [c for c in df_clean.columns if c != target_col]
+    feature_cols = [c for c in feature_cols if df_clean[c].notna().mean() > 0.10]
+
     X_parts, feature_names = [], []
 
     for col in feature_cols:
@@ -383,6 +432,10 @@ def ml_risk_profiles(target_column: Optional[str] = None):
             X_parts.append(df_clean[col].fillna(0).values.reshape(-1, 1))
             feature_names.append(col)
         elif df_clean[col].dtype == "object":
+            # Solo usar si tiene más de 1 valor real (no solo UNKNOWN)
+            real_vals = df_clean[col].dropna().nunique()
+            if real_vals < 2:
+                continue
             le = LabelEncoder()
             try:
                 encoded = le.fit_transform(df_clean[col].fillna("UNKNOWN").astype(str)).reshape(-1, 1)
