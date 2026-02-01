@@ -114,6 +114,20 @@ async def upload_csv(file: UploadFile = File(...)):
         # Normalizar nombres: lowercase, espacios a guión bajo
         _df.columns = _df.columns.str.strip().str.lower().str.replace(" ", "_")
 
+        # Deduplicar nombres de columna (el CSV ASRS tiene Aircraft 1/2, Person 1/2 etc
+        # que tras normalizar quedan iguales → df[col] retorna DataFrame en lugar de Series)
+        cols = list(_df.columns)
+        seen = {}
+        new_cols = []
+        for c in cols:
+            if c in seen:
+                seen[c] += 1
+                new_cols.append(f"{c}.{seen[c]}")
+            else:
+                seen[c] = 0
+                new_cols.append(c)
+        _df.columns = new_cols
+
         # Convertir columnas numéricas que quedaron como string
         for col in _df.columns:
             try:
