@@ -103,12 +103,12 @@ async def upload_csv(file: UploadFile = File(...)):
         if looks_like_subheader:
             # Usar fila 1 como nombres de columna, datos desde fila 2
             _df = raw_df.iloc[2:].copy()
-            _df.columns = raw_df.iloc[1].astype(str).str.strip()
+            _df.columns = raw_df.iloc[1].fillna("").astype(str).str.strip()
             _df = _df.reset_index(drop=True)
         else:
             # CSV normal con una sola fila de header
             _df = raw_df.iloc[1:].copy()
-            _df.columns = raw_df.iloc[0].astype(str).str.strip()
+            _df.columns = raw_df.iloc[0].fillna("").astype(str).str.strip()
             _df = _df.reset_index(drop=True)
 
         # Normalizar nombres: lowercase, espacios a guión bajo
