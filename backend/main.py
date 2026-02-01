@@ -97,8 +97,8 @@ async def upload_csv(file: UploadFile = File(...)):
         # Fila 1 = sub-nombres reales (ACN, Date, Local Time Of Day...)
         # Fila 2+ = datos reales
         # Si la fila 1 tiene mayoria de strings descriptivos, es sub-header
-        row1 = raw_df.iloc[1].astype(str)
-        looks_like_subheader = row1.str.match(r"^[A-Za-z]").mean() > 0.4
+        row1 = raw_df.iloc[1].fillna("").astype(str)
+        looks_like_subheader = row1.str.match(r"^[A-Za-z]").sum() > len(row1) * 0.4
 
         if looks_like_subheader:
             # Usar fila 1 como nombres de columna, datos desde fila 2
