@@ -638,8 +638,8 @@ async function loadML(){
       destroyChart("riskClasses");
       const ctx=document.getElementById("chartRiskClasses").getContext("2d");
       const labels=d.classes.map(c=>String(c).substring(0,22));
-      const precision=d.classes.map(c=>(d.classification_report[String(c)]?.precision||0)*100);
-      const recall=d.classes.map(c=>(d.classification_report[String(c)]?.recall||0)*100);
+      const precision=d.classes.map((c,i)=>(d.classification_report[String(i)]?.precision||0)*100);
+      const recall=d.classes.map((c,i)=>(d.classification_report[String(i)]?.recall||0)*100);
       charts["riskClasses"]=new Chart(ctx,{
         type:"bar",
         data:{labels,datasets:[
